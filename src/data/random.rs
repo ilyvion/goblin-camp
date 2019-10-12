@@ -21,6 +21,7 @@
 use rand::{SeedableRng, RngCore, Rng};
 use rand::rngs::StdRng;
 use std::time::SystemTime;
+use crate::{Coordinate, Axis};
 
 /// Represents the sign of a numeric value, either `Positive` or `Negative`.
 #[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Debug, Hash)]
@@ -42,14 +43,17 @@ pub trait Generator {
     ///
     /// # Panics
     /// * If `start > end`.
-    fn generate(&mut self, start: u32, end: u32) -> u32;
+    fn generate(&mut self, start: i32, end: i32) -> i32;
 
     /// Generates a value between 0 and end, inclusive (\[0, end\]).
     ///
     /// # Arguments
     ///
     /// * `end` - The highest number to possibly generate.
-    fn generate_up_to(&mut self, end: u32) -> u32;
+    ///
+    /// # Panics
+    /// * If `end < 0`.
+    fn generate_up_to(&mut self, end: i32) -> i32;
 
     /// Generates a value between 0.0 and 1.0, inclusive (\[0.0, 1.0\]).
     fn generate_floating(&mut self) -> f64;
@@ -60,9 +64,29 @@ pub trait Generator {
     /// Generates a value of `Positive` or `Negative`.
     fn generate_sign(&mut self) -> Sign;
 
-    // TODO: Add methods for choosing random coordinates when we have coordinates to work with
-    // * Inside given rectangle
-    // * Inside given radius
+    /// Generates a coordinate inside the rectangular area delineated by `origin` and `extent`,
+    /// excluding the coordinates `extent` itself, i.e. [origin, extent).
+    fn generate_coordinate_within_extent(&mut self, origin: Coordinate, extent: Coordinate) -> Coordinate;
+
+    /// Generates a coordinate inside the rectangular area delineated by `(0, 0)` and `extent`,
+    /// excluding the coordinates of and `extent` itself, i.e. [(0, 0), extent).
+    fn generate_coordinate_within_origin_extent(&mut self, extent: Coordinate) -> Coordinate;
+
+    /// Generates a coordinate which is up to `distance` away per axis from `origin`.
+    ///
+    /// # Panics
+    /// * If `distance < 0`.
+    fn generate_coordinate_within_distance(&mut self, origin: Coordinate, distance: i32) -> Coordinate;
+
+    /// Generates a coordinate which is up to `distance` away per axis from `(0, 0)`.
+    ///
+    /// # Panics
+    /// * If `distance < 0`.
+    fn generate_coordinate_within_origin_distance(&mut self, distance: i32) -> Coordinate;
+
+    /// Generates a coordinate inside a rectangle delineated by its `low` and `high` corners,
+    /// both included.
+    fn generate_coordinate_within_rectangle(&mut self, low: Coordinate, high: Coordinate) -> Coordinate;
 
     /// Returns a `Dice` based on this generator.
     ///
@@ -129,11 +153,11 @@ impl Default for DefaultGenerator<StdRng> {
 }
 
 impl<R: RngCore> Generator for DefaultGenerator<R> {
-    fn generate(&mut self, start: u32, end: u32) -> u32 {
+    fn generate(&mut self, start: i32, end: i32) -> i32 {
         self.rng.gen_range(start, end + 1)
     }
 
-    fn generate_up_to(&mut self, end: u32) -> u32 {
+    fn generate_up_to(&mut self, end: i32) -> i32 {
         self.generate(0, end)
     }
 
@@ -151,6 +175,35 @@ impl<R: RngCore> Generator for DefaultGenerator<R> {
         } else {
             Sign::Negative
         }
+    }
+
+    fn generate_coordinate_within_extent(&mut self, origin: Coordinate, extent: Coordinate) -> Coordinate {
+        let mut res = origin;
+        Axis::both().for_each(|a| res[a] += self.generate_up_to(extent[a] - 1));
+
+        res
+    }
+
+    fn generate_coordinate_within_origin_extent(&mut self, extent: Coordinate) -> Coordinate {
+        self.generate_coordinate_within_extent(Coordinate::ORIGIN, extent)
+    }
+
+    fn generate_coordinate_within_distance(&mut self, origin: Coordinate, distance: i32) -> Coordinate {
+        let mut res = origin;
+        Axis::both().for_each(|a| res[a] += self.generate(-distance, distance));
+
+        res
+    }
+
+    fn generate_coordinate_within_origin_distance(&mut self, distance: i32) -> Coordinate {
+        self.generate_coordinate_within_distance(Coordinate::ORIGIN, distance)
+    }
+
+    fn generate_coordinate_within_rectangle(&mut self, low: Coordinate, high: Coordinate) -> Coordinate {
+        let mut res = Coordinate::default();
+        Axis::both().for_each(|a| res[a] += self.generate(low[a], high[a]));
+
+        res
     }
 }
 
@@ -191,7 +244,7 @@ impl<'g, G: Generator> Dice<'g, G> {
     pub fn roll(&mut self) -> u32 {
         let result =
             (0..self.rolls).fold(0, |r, _|
-                r + self.generator.generate(1, self.faces.max(1)));
+                r + self.generator.generate(1, self.faces.max(1) as i32));
 
         (f64::from(result) * self.multiplier + self.offset).round() as u32
     }
@@ -235,11 +288,11 @@ impl Default for StaticGenerator {
 }
 
 impl Generator for StaticGenerator {
-    fn generate(&mut self, start: u32, _: u32) -> u32 {
+    fn generate(&mut self, start: i32, _: i32) -> i32 {
         start
     }
 
-    fn generate_up_to(&mut self, end: u32) -> u32 {
+    fn generate_up_to(&mut self, end: i32) -> i32 {
         end
     }
 
@@ -253,5 +306,25 @@ impl Generator for StaticGenerator {
 
     fn generate_sign(&mut self) -> Sign {
         Sign::Positive
+    }
+
+    fn generate_coordinate_within_extent(&mut self, origin: Coordinate, extent: Coordinate) -> Coordinate {
+        origin + extent - 1
+    }
+
+    fn generate_coordinate_within_origin_extent(&mut self, extent: Coordinate) -> Coordinate {
+        extent
+    }
+
+    fn generate_coordinate_within_distance(&mut self, origin: Coordinate, distance: i32) -> Coordinate {
+        origin + distance
+    }
+
+    fn generate_coordinate_within_origin_distance(&mut self, distance: i32) -> Coordinate {
+        Coordinate::ORIGIN + distance
+    }
+
+    fn generate_coordinate_within_rectangle(&mut self, low: Coordinate, high: Coordinate) -> Coordinate {
+        low + high
     }
 }
