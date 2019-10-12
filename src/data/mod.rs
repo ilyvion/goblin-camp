@@ -18,4 +18,4 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-pub mod data;
+pub mod random;
