@@ -19,3 +19,7 @@
 */
 
 pub mod data;
+
+pub mod coordinate;
+
+pub use coordinate::*;
