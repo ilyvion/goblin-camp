@@ -18,16 +18,26 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use goblin_camp::game::Game;
-use std::error::Error;
-use std::process;
+use snafu::{Snafu};
+use crate::game::GameRef;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let mut game = Game::new();
-    game.run().unwrap_or_else(|err| {
-        eprintln!("Error while running the game: {}", err);
-        process::exit(1);
-    });
-
-    Ok(())
+#[derive(Debug, Snafu, Eq, PartialEq)]
+pub enum Error {
 }
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+pub enum GameStateChange {
+    Replace(Box<dyn GameState>),
+    Push(Box<dyn GameState>),
+    Pop,
+    NoOp,
+    EndGame
+}
+
+pub trait GameState {
+    fn handle(&mut self, game_ref: GameRef) -> Result<GameStateChange>;
+}
+
+pub mod main_menu;
+
