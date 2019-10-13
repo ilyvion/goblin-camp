@@ -21,7 +21,7 @@
 use rand::{SeedableRng, RngCore, Rng};
 use rand::rngs::StdRng;
 use std::time::SystemTime;
-use crate::{Coordinate, Axis};
+use crate::coordinate::{Coordinate, Axis};
 
 /// Represents the sign of a numeric value, either `Positive` or `Negative`.
 #[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Debug, Hash)]

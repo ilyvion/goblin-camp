@@ -21,7 +21,6 @@
 pub mod data;
 
 pub mod coordinate;
-pub use coordinate::*;
 
 pub mod game;
 
