@@ -29,3 +29,8 @@ edition = "2018"
 rand="0.7"
 tcod="0.15"
 snafu="0.5"
+clap = {version = "^2", features = ["yaml"]}
+slog = {version="2.5", features = ["max_level_trace", "release_max_level_trace"]}
+slog-term="2.4"
+slog-async="2.3"
+derivative="1.0"

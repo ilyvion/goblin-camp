@@ -26,6 +26,8 @@ use tcod::console::BackgroundFlag::{Default as BackgroundDefault, Set};
 use crate::game::{Game, GameRef};
 use tcod::input::{Event, KEY_RELEASE, MOUSE};
 use tcod::console::{Console, Root};
+use slog::{o, debug};
+use derivative::Derivative;
 
 pub struct MainMenu;
 
@@ -57,7 +59,7 @@ impl MainMenu {
         root.set_background_flag(Set);
 
         root.set_default_foreground(CELADON);
-        root.print(render_data.edge_x + Self::WIDTH / 2, render_data.edge_y - 3, format!("Goblin Camp {}", Game::VERSION));
+        root.print(render_data.edge_x + Self::WIDTH / 2, render_data.edge_y - 3, format!("{} {}", Game::NAME, Game::VERSION));
     }
 
     fn render_menu_entries(root: &mut Root, render_data: RenderData) {
@@ -81,12 +83,13 @@ impl MainMenu {
     }
 
     fn handle_input(render_data: RenderData, input_data: &mut InputData) -> Option<Result<GameStateChange>> {
-        //let mut selected = selected;
+        let method_logger = render_data.logger.new(o!("Method" => "MainMenu::handle_input"));
         for (flags, event) in tcod::input::events() {
             if flags.intersects(KEY_RELEASE) {
                 if let Event::Key(key) = event {
                     for entry in MainMenu::ENTRIES.iter() {
                         if key.printable == entry.shortcut && entry.is_active() {
+                            debug!(method_logger, "Entry chosen by key"; "entry" => entry.label, "key" => key.printable);
                             return Some(Ok((entry.new_state)()));
                         }
                     }
@@ -94,8 +97,9 @@ impl MainMenu {
             } else if flags.intersects(MOUSE) {
                 if let Event::Mouse(mouse) = event {
                     input_data.selected = if mouse.cx > render_data.edge_x as isize && mouse.cx < (render_data.edge_x + Self::WIDTH) as isize {
-                        let selected_index: usize = (mouse.cy - (render_data.edge_y + 2) as isize) as usize / 2;
-                        if mouse.cy % 2 == 0 && selected_index < MainMenu::ENTRIES.len() {
+                        let selected_line = (mouse.cy - (render_data.edge_y + 2) as isize) as usize;
+                        let selected_index = selected_line / 2;
+                        if selected_line % 2 == 0 && selected_index < MainMenu::ENTRIES.len() {
                             Some(&MainMenu::ENTRIES[selected_index])
                         } else { None }
                     } else { None };
@@ -106,6 +110,8 @@ impl MainMenu {
                         input_data.l_button_down = false;
                         if let Some(selected) = input_data.selected {
                             if selected.is_active() {
+                                let mouse_coordinates = format!("({}, {})", mouse.cx, mouse.cy);
+                                debug!(method_logger, "Entry chosen by mouse"; "entry" => selected.label, "position" => mouse_coordinates);
                                 return Some(Ok((selected.new_state)()));
                             }
                         }
@@ -120,6 +126,8 @@ impl MainMenu {
 
 impl GameState for MainMenu {
     fn handle(&mut self, game_ref: GameRef) -> Result<GameStateChange> {
+        let logger = game_ref.logger.new(o!("GameState" => "MainMenu"));
+        let method_logger = logger.new(o!("Method" => "MainMenu::handle"));
         let root = game_ref.root;
 
         let height: i32 = (MainMenu::ENTRIES.len() * 2 + 2) as i32;
@@ -134,13 +142,15 @@ impl GameState for MainMenu {
             edge_y,
             height,
             selected: None,
+            logger,
         };
+        debug!(method_logger, "{:?}", render_data);
 
         loop {
             render_data.selected = selected.map(|s| s.shortcut);
 
-            Self::render_menu(root, render_data);
-            Self::render_menu_entries(root, render_data);
+            Self::render_menu(root, render_data.clone());
+            Self::render_menu_entries(root, render_data.clone());
 
             if !render_credits_done {
                 render_credits_done = root.render_credits(edge_x + 5, edge_y + 25, true);
@@ -152,7 +162,7 @@ impl GameState for MainMenu {
                 l_button_down,
                 selected,
             };
-            let result = Self::handle_input(render_data, &mut input_data);
+            let result = Self::handle_input(render_data.clone(), &mut input_data);
             if let Some(result) = result {
                 return result;
             }
@@ -167,12 +177,16 @@ impl GameState for MainMenu {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Derivative, Clone)]
+#[derivative(Debug)]
 struct RenderData {
     height: i32,
     edge_x: i32,
     edge_y: i32,
+    #[derivative(Debug="ignore")]
     selected: Option<char>,
+    #[derivative(Debug="ignore")]
+    logger: slog::Logger,
 }
 
 #[derive(Copy, Clone)]

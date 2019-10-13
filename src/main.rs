@@ -21,13 +21,35 @@
 use goblin_camp::game::Game;
 use std::error::Error;
 use std::process;
+use clap::{App, load_yaml};
+use goblin_camp::Config;
+use slog::{o, Drain, info};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut game = Game::new();
+    // Load phase.
+    let config = {
+        let yaml = load_yaml!("cli.yml");
+        let matches = App::from_yaml(yaml).get_matches();
+        Config::new(matches)
+    }.unwrap_or_else(|err| {
+        eprintln!("Problem parsing arguments: {}", err);
+        process::exit(1);
+    });
+
+    // Set up logging framework
+    let decorator = slog_term::TermDecorator::new().build();
+    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = slog_async::Async::new(drain).build();
+    let drain = slog::LevelFilter::new(drain, config.logging_level()).fuse();
+    let root_logger = slog::Logger::root(drain, o!());
+
+    info!(root_logger, "Starting {} {}", Game::NAME, Game::VERSION);
+    let mut game = Game::new(root_logger.clone(), config);
     game.run().unwrap_or_else(|err| {
         eprintln!("Error while running the game: {}", err);
         process::exit(1);
     });
 
+    info!(root_logger, "Ending {} {}", Game::NAME, Game::VERSION);
     Ok(())
 }

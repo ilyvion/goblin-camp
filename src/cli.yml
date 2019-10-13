@@ -1,0 +1,21 @@
+name: goblin-camp
+version: "0.22.0"
+author: Alexander Krivács Schrøder <alexschrod@gmail.com> and Ilkka Halila <gencontain@gmail.com>
+about: Goblin Camp aims to be a roguelike city builder with an emphasis on macromanaging the economy and military
+args:
+  - boot_test:
+      long: boottest
+      short: b
+      help: Only run the bootstrapping, then quit
+  - dev_mode:
+      long: dev
+      short: d
+      help: Enables dev mode
+  - no_dumps:
+      long: nodumps
+      short: n
+      help: Does not do a mem dump if the application crashes
+  - verbose:
+      short: v
+      multiple: true
+      help: Verbosity level of logging
