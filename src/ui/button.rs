@@ -19,11 +19,11 @@
 */
 
 use crate::drawable_prerequisites_impl;
-use crate::ui::{Position, Size, Drawable, MenuResult, HitResult, RespondKind};
-use crate::util::SafeConsole;
-use tcod::{BackgroundFlag, colors, TextAlignment};
 use crate::game::Input;
+use crate::ui::{Drawable, HitResult, MenuResult, Position, RespondKind, Size};
+use crate::util::SafeConsole;
 use std::any::Any;
+use tcod::{colors, BackgroundFlag, TextAlignment};
 
 pub struct Button {
     position: Position,
@@ -41,7 +41,13 @@ impl Button {
         Self::new(text, position, width, None, false)
     }
 
-    pub fn new<S: AsRef<str>>(text: S, position: Position, width: i32, shortcut: Option<char>, dismiss: bool) -> Self {
+    pub fn new<S: AsRef<str>>(
+        text: S,
+        position: Position,
+        width: i32,
+        shortcut: Option<char>,
+        dismiss: bool,
+    ) -> Self {
         Self {
             position,
             size: Size::new(width, 0),
@@ -68,14 +74,29 @@ impl Drawable for Button {
             console.set_default_background(colors::BLACK);
         }
         console.set_alignment(TextAlignment::Center);
-        console.print_frame(relative_position + self.position, self.size + (0, 3), true, BackgroundFlag::Default, None);
-        console.print(relative_position + self.position + (self.size.width / 2, 1), &self.text);
+        console.print_frame(
+            relative_position + self.position,
+            self.size + (0, 3),
+            true,
+            BackgroundFlag::Default,
+            None,
+        );
+        console.print(
+            relative_position + self.position + (self.size.width / 2, 1),
+            &self.text,
+        );
     }
 
     fn update(&mut self, relative_position: Position, input: Input) -> MenuResult {
         if let Some(shortcut) = self.shortcut {
-            if input.key_event.raw.printable == shortcut { // TODO: Also support keycode?
-                return MenuResult::new(HitResult::Hit, Some(RespondKind::Key(shortcut)), self.dismiss, Some(Box::new(self.text.clone())));
+            if input.key_event.raw.printable == shortcut {
+                // TODO: Also support keycode?
+                return MenuResult::new(
+                    HitResult::Hit,
+                    Some(RespondKind::Key(shortcut)),
+                    self.dismiss,
+                    Some(Box::new(self.text.clone())),
+                );
             }
         }
 
@@ -83,8 +104,16 @@ impl Drawable for Button {
         let rectangle = relative_position + self.position + size;
         if rectangle.contains_position(input.mouse_event.character_position) {
             self.selected = true;
-            let response = if input.mouse_event.clicked { Some(RespondKind::Mouse(input.mouse_event.character_position)) } else { None };
-            let data: Option<Box<dyn Any>> = if response.is_some() { Some(Box::new(self.text.clone())) } else { None };
+            let response = if input.mouse_event.clicked {
+                Some(RespondKind::Mouse(input.mouse_event.character_position))
+            } else {
+                None
+            };
+            let data: Option<Box<dyn Any>> = if response.is_some() {
+                Some(Box::new(self.text.clone()))
+            } else {
+                None
+            };
             MenuResult::new(HitResult::Hit, response, self.dismiss, data)
         } else {
             self.selected = false;

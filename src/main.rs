@@ -18,14 +18,14 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use goblin_camp::game::Game;
-use goblin_camp::data::random::DefaultGenerator;
+use clap::{load_yaml, App};
 use goblin_camp::data::paths::Paths;
+use goblin_camp::data::random::DefaultGenerator;
+use goblin_camp::game::Game;
+use goblin_camp::Config;
+use slog::{info, o, Drain};
 use std::error::Error;
 use std::process;
-use clap::{App, load_yaml};
-use goblin_camp::Config;
-use slog::{o, Drain, info};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Create all "singleton" types
@@ -37,7 +37,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let yaml = load_yaml!("cli.yml");
         let matches = App::from_yaml(yaml).get_matches();
         Config::new(matches)
-    }.unwrap_or_else(|err| {
+    }
+    .unwrap_or_else(|err| {
         eprintln!("Problem parsing arguments: {}", err);
         process::exit(1);
     });

@@ -19,9 +19,9 @@
 */
 
 use crate::drawable_prerequisites_impl;
-use crate::ui::{Position, Size, Drawable, MenuResult, HitResult};
-use crate::util::SafeConsole;
 use crate::game::Input;
+use crate::ui::{Drawable, HitResult, MenuResult, Position, Size};
+use crate::util::SafeConsole;
 
 pub struct UiContainer {
     position: Position,
@@ -31,8 +31,17 @@ pub struct UiContainer {
 }
 
 impl UiContainer {
-    pub fn new<I: Iterator<Item=Box<dyn Drawable>>>(components: I, position: Position, size: Size) -> Self {
-        Self { position, size, components: components.collect(), visibility_fn: None }
+    pub fn new<I: Iterator<Item = Box<dyn Drawable>>>(
+        components: I,
+        position: Position,
+        size: Size,
+    ) -> Self {
+        Self {
+            position,
+            size,
+            components: components.collect(),
+            visibility_fn: None,
+        }
     }
 
     pub fn add_component(&mut self, component: Box<dyn Drawable>) {

@@ -18,15 +18,17 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::game::game_state::{GameState, GameStateError, GameStateChange};
-use std::borrow::Cow;
+use crate::game::game_state::{GameState, GameStateChange, GameStateError};
 use crate::game::GameRef;
 use crate::ui::MessageBox;
+use std::borrow::Cow;
 
 pub struct ConfirmNewGame;
 
 impl ConfirmNewGame {
-    pub fn game_state() -> GameStateChange { GameStateChange::Push(Box::new(ConfirmNewGame)) }
+    pub fn game_state() -> GameStateChange {
+        GameStateChange::Push(Box::new(ConfirmNewGame))
+    }
 }
 
 impl GameState for ConfirmNewGame {
@@ -44,7 +46,7 @@ impl GameState for ConfirmNewGame {
                 "Yes",
                 Box::new(|| GameStateChange::EndGame),
                 Some("No"),
-                Some(Box::new(|| GameStateChange::Pop))
+                Some(Box::new(|| GameStateChange::Pop)),
             )))
         } else {
             // TODO: Don't just Pop, but start a new game

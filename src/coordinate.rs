@@ -18,9 +18,9 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use std::ops::{Index, Add, Sub, Mul, Div, AddAssign, SubAssign, IndexMut, MulAssign, DivAssign};
-use std::fmt::Display;
 use std::fmt;
+use std::fmt::Display;
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Debug, Hash)]
 pub enum Direction {
@@ -42,13 +42,16 @@ pub enum Axis {
 }
 
 impl Axis {
-    pub fn both() -> impl Iterator<Item=Self> {
+    pub fn both() -> impl Iterator<Item = Self> {
         use Axis::*;
         [X, Y].iter().cloned()
     }
 
-    pub fn for_both<F>(f: F) where
-        Self: Sized, F: FnMut(Self) {
+    pub fn for_both<F>(f: F)
+    where
+        Self: Sized,
+        F: FnMut(Self),
+    {
         Self::both().for_each(f)
     }
 }
@@ -67,11 +70,17 @@ impl Coordinate {
     }
 
     pub fn min(self, other: Self) -> Self {
-        Self { x: self.x.min(other.x), y: self.y.min(other.y) }
+        Self {
+            x: self.x.min(other.x),
+            y: self.y.min(other.y),
+        }
     }
 
     pub fn max(self, other: Self) -> Self {
-        Self { x: self.x.max(other.x), y: self.y.max(other.y) }
+        Self {
+            x: self.x.max(other.x),
+            y: self.y.max(other.y),
+        }
     }
 
     pub fn inside_rectangle(self, low: Self, high: Self) -> bool {
@@ -120,15 +129,15 @@ impl Display for Coordinate {
 impl From<Direction> for Coordinate {
     fn from(direction: Direction) -> Self {
         match direction {
-            Direction::North => { Self::new(0, -1) }
-            Direction::NorthEast => { Self::new(1, -1) }
-            Direction::East => { Self::new(1, 0) }
-            Direction::SouthEast => { Self::new(1, 1) }
-            Direction::South => { Self::new(0, 1) }
-            Direction::SouthWest => { Self::new(-1, 1) }
-            Direction::West => { Self::new(-1, 0) }
-            Direction::NorthWest => { Self::new(-1, -1) }
-            Direction::NoDirection => { Self::new(0, 0) }
+            Direction::North => Self::new(0, -1),
+            Direction::NorthEast => Self::new(1, -1),
+            Direction::East => Self::new(1, 0),
+            Direction::SouthEast => Self::new(1, 1),
+            Direction::South => Self::new(0, 1),
+            Direction::SouthWest => Self::new(-1, 1),
+            Direction::West => Self::new(-1, 0),
+            Direction::NorthWest => Self::new(-1, -1),
+            Direction::NoDirection => Self::new(0, 0),
         }
     }
 }
@@ -138,8 +147,8 @@ impl Index<Axis> for Coordinate {
 
     fn index(&self, index: Axis) -> &Self::Output {
         match index {
-            Axis::X => { &self.x }
-            Axis::Y => { &self.y }
+            Axis::X => &self.x,
+            Axis::Y => &self.y,
         }
     }
 }
@@ -147,8 +156,8 @@ impl Index<Axis> for Coordinate {
 impl IndexMut<Axis> for Coordinate {
     fn index_mut(&mut self, index: Axis) -> &mut Self::Output {
         match index {
-            Axis::X => { &mut self.x }
-            Axis::Y => { &mut self.y }
+            Axis::X => &mut self.x,
+            Axis::Y => &mut self.y,
         }
     }
 }
@@ -157,7 +166,10 @@ impl Add<i32> for Coordinate {
     type Output = Self;
 
     fn add(self, rhs: i32) -> Self::Output {
-        Self { x: self.x + rhs, y: self.y + rhs }
+        Self {
+            x: self.x + rhs,
+            y: self.y + rhs,
+        }
     }
 }
 
@@ -165,7 +177,10 @@ impl Add for Coordinate {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self { x: self.x + rhs.x, y: self.y + rhs.y }
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
     }
 }
 
@@ -185,7 +200,10 @@ impl Sub<i32> for Coordinate {
     type Output = Self;
 
     fn sub(self, rhs: i32) -> Self::Output {
-        Self { x: self.x - rhs, y: self.y - rhs }
+        Self {
+            x: self.x - rhs,
+            y: self.y - rhs,
+        }
     }
 }
 
@@ -193,7 +211,10 @@ impl Sub for Coordinate {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self { x: self.x - rhs.x, y: self.y - rhs.y }
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
     }
 }
 
@@ -213,7 +234,10 @@ impl Mul<i32> for Coordinate {
     type Output = Self;
 
     fn mul(self, rhs: i32) -> Self::Output {
-        Self { x: self.x * rhs, y: self.y * rhs }
+        Self {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
     }
 }
 
@@ -227,7 +251,10 @@ impl Div<i32> for Coordinate {
     type Output = Self;
 
     fn div(self, rhs: i32) -> Self::Output {
-        Self { x: self.x / rhs, y: self.y / rhs }
+        Self {
+            x: self.x / rhs,
+            y: self.y / rhs,
+        }
     }
 }
 

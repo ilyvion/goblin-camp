@@ -18,18 +18,18 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::game::game_state::{GameState, GameStateChange, GameStateResult};
-use crate::game::game_state::GameStateUpdateResult;
-use tcod::TextAlignment;
-use tcod::colors::{WHITE, BLACK, CELADON, GREY};
-use tcod::console::BackgroundFlag::{Default as BackgroundDefault, Set};
-use crate::game::{Game, GameRef};
-use tcod::input::Event;
-use tcod::console::{Console, Root};
-use slog::{o, debug};
-use derivative::Derivative;
-use std::borrow::Cow;
 use crate::game::game_state::game::ConfirmNewGame;
+use crate::game::game_state::GameStateUpdateResult;
+use crate::game::game_state::{GameState, GameStateChange, GameStateResult};
+use crate::game::{Game, GameRef};
+use derivative::Derivative;
+use slog::{debug, o};
+use std::borrow::Cow;
+use tcod::colors::{BLACK, CELADON, GREY, WHITE};
+use tcod::console::BackgroundFlag::{Default as BackgroundDefault, Set};
+use tcod::console::{Console, Root};
+use tcod::input::Event;
+use tcod::TextAlignment;
 
 pub struct MainMenu {
     logger: Option<slog::Logger>,
@@ -38,22 +38,74 @@ pub struct MainMenu {
 
 impl MainMenu {
     const ENTRIES: [MainMenuEntry; 9] = [
-        MainMenuEntry { label: "New Game", shortcut: 'n', active: ActiveState::Always, new_state: ConfirmNewGame::game_state },
-        MainMenuEntry { label: "Continue", shortcut: 'c', active: ActiveState::IfRunning, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Load", shortcut: 'l', active: ActiveState::HasSaves, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Save", shortcut: 's', active: ActiveState::IfRunning, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Settings", shortcut: 'o', active: ActiveState::Never, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Keys", shortcut: 'k', active: ActiveState::Never, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Mods", shortcut: 'm', active: ActiveState::Never, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Tile sets", shortcut: 't', active: ActiveState::Never, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Exit", shortcut: 'q', active: ActiveState::Always, new_state: MainMenu::quit_game_state },
+        MainMenuEntry {
+            label: "New Game",
+            shortcut: 'n',
+            active: ActiveState::Always,
+            new_state: ConfirmNewGame::game_state,
+        },
+        MainMenuEntry {
+            label: "Continue",
+            shortcut: 'c',
+            active: ActiveState::IfRunning,
+            new_state: MainMenu::quit_game_state,
+        },
+        MainMenuEntry {
+            label: "Load",
+            shortcut: 'l',
+            active: ActiveState::HasSaves,
+            new_state: MainMenu::quit_game_state,
+        },
+        MainMenuEntry {
+            label: "Save",
+            shortcut: 's',
+            active: ActiveState::IfRunning,
+            new_state: MainMenu::quit_game_state,
+        },
+        MainMenuEntry {
+            label: "Settings",
+            shortcut: 'o',
+            active: ActiveState::Never,
+            new_state: MainMenu::quit_game_state,
+        },
+        MainMenuEntry {
+            label: "Keys",
+            shortcut: 'k',
+            active: ActiveState::Never,
+            new_state: MainMenu::quit_game_state,
+        },
+        MainMenuEntry {
+            label: "Mods",
+            shortcut: 'm',
+            active: ActiveState::Never,
+            new_state: MainMenu::quit_game_state,
+        },
+        MainMenuEntry {
+            label: "Tile sets",
+            shortcut: 't',
+            active: ActiveState::Never,
+            new_state: MainMenu::quit_game_state,
+        },
+        MainMenuEntry {
+            label: "Exit",
+            shortcut: 'q',
+            active: ActiveState::Always,
+            new_state: MainMenu::quit_game_state,
+        },
     ];
 
     const WIDTH: i32 = 20;
 
-    pub fn game_state() -> Box<dyn GameState> { Box::new(MainMenu { logger: None, render_data: None }) }
+    pub fn game_state() -> Box<dyn GameState> {
+        Box::new(MainMenu {
+            logger: None,
+            render_data: None,
+        })
+    }
 
-    fn quit_game_state() -> GameStateChange { GameStateChange::EndGame }
+    fn quit_game_state() -> GameStateChange {
+        GameStateChange::EndGame
+    }
 
     fn render(&mut self, game_ref: &mut GameRef, background: bool) -> GameStateResult {
         let render_data = self.render_data.as_mut().unwrap();
@@ -62,7 +114,10 @@ impl MainMenu {
         Self::render_menu_entries(game_ref, render_data.clone());
 
         if !background && !render_data.render_credits_done {
-            render_data.render_credits_done = game_ref.root.render_credits(render_data.edge_x + 5, render_data.edge_y + 25, true);
+            render_data.render_credits_done =
+                game_ref
+                    .root
+                    .render_credits(render_data.edge_x + 5, render_data.edge_y + 25, true);
         }
 
         Ok(())
@@ -72,19 +127,34 @@ impl MainMenu {
         root.set_default_foreground(WHITE);
         root.set_default_background(BLACK);
 
-        root.print_frame(render_data.edge_x, render_data.edge_y, Self::WIDTH, render_data.height, true, BackgroundDefault, Some("Main Menu"));
+        root.print_frame(
+            render_data.edge_x,
+            render_data.edge_y,
+            Self::WIDTH,
+            render_data.height,
+            true,
+            BackgroundDefault,
+            Some("Main Menu"),
+        );
         root.set_alignment(TextAlignment::Center);
         root.set_background_flag(Set);
 
         root.set_default_foreground(CELADON);
-        root.print(render_data.edge_x + Self::WIDTH / 2, render_data.edge_y - 3, format!("{} {}", Game::NAME, Game::VERSION));
+        root.print(
+            render_data.edge_x + Self::WIDTH / 2,
+            render_data.edge_y - 3,
+            format!("{} {}", Game::NAME, Game::VERSION),
+        );
     }
 
     fn render_menu_entries(game_ref: &mut GameRef, render_data: RenderData) {
         game_ref.root.set_default_foreground(WHITE);
 
         for (i, entry) in MainMenu::ENTRIES.iter().enumerate() {
-            if render_data.selected.map_or(false, |selected_entry| selected_entry == entry) {
+            if render_data
+                .selected
+                .map_or(false, |selected_entry| selected_entry == entry)
+            {
                 game_ref.root.set_default_foreground(BLACK);
                 game_ref.root.set_default_background(WHITE);
             } else {
@@ -96,12 +166,22 @@ impl MainMenu {
                 game_ref.root.set_default_foreground(GREY);
             }
 
-            game_ref.root.print(render_data.edge_x + Self::WIDTH / 2, render_data.edge_y + ((i + 1) * 2) as i32, entry.label);
+            game_ref.root.print(
+                render_data.edge_x + Self::WIDTH / 2,
+                render_data.edge_y + ((i + 1) * 2) as i32,
+                entry.label,
+            );
         }
     }
 
-    fn handle_input(game_ref: &mut GameRef, render_data: RenderData, input_data: &mut InputData) -> Option<GameStateUpdateResult> {
-        let method_logger = render_data.logger.new(o!("Method" => "MainMenu::handle_input"));
+    fn handle_input(
+        game_ref: &mut GameRef,
+        render_data: RenderData,
+        input_data: &mut InputData,
+    ) -> Option<GameStateUpdateResult> {
+        let method_logger = render_data
+            .logger
+            .new(o!("Method" => "MainMenu::handle_input"));
         // TODO: Rewrite to use the Input data directly
         if let Some(raw_event) = game_ref.input.raw_events.first().cloned() {
             match raw_event {
@@ -114,13 +194,19 @@ impl MainMenu {
                     }
                 }
                 Event::Mouse(mouse) => {
-                    input_data.selected = if mouse.cx > render_data.edge_x as isize && mouse.cx < (render_data.edge_x + Self::WIDTH) as isize {
+                    input_data.selected = if mouse.cx > render_data.edge_x as isize
+                        && mouse.cx < (render_data.edge_x + Self::WIDTH) as isize
+                    {
                         let selected_line = (mouse.cy - (render_data.edge_y + 2) as isize) as usize;
                         let selected_index = selected_line / 2;
                         if selected_line % 2 == 0 && selected_index < MainMenu::ENTRIES.len() {
                             Some(&MainMenu::ENTRIES[selected_index])
-                        } else { None }
-                    } else { None };
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
 
                     if mouse.lbutton {
                         input_data.l_button_down = true
@@ -190,7 +276,10 @@ impl GameState for MainMenu {
             if let Some(result) = result {
                 return result;
             }
-            let InputData { l_button_down: l_button_down_new, selected: selected_new } = input_data;
+            let InputData {
+                l_button_down: l_button_down_new,
+                selected: selected_new,
+            } = input_data;
             render_data.l_button_down = l_button_down_new;
             render_data.selected = selected_new;
         }
@@ -253,7 +342,7 @@ impl MainMenuEntry {
         match self.active {
             ActiveState::Always => true,
             ActiveState::IfRunning => game_ref.is_running,
-            _ => false
+            _ => false,
         }
     }
 }

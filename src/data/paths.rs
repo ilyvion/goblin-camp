@@ -18,8 +18,8 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use snafu::{ResultExt, Snafu};
 use std::path::{Path, PathBuf};
-use snafu::{Snafu, ResultExt};
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -47,7 +47,10 @@ impl Paths {
 
         Ok(Self {
             executable_file: executable_file.clone(),
-            executable_directory: executable_file.parent().ok_or(Error::PathParentError)?.to_path_buf()
+            executable_directory: executable_file
+                .parent()
+                .ok_or(Error::PathParentError)?
+                .to_path_buf(),
         })
     }
 }

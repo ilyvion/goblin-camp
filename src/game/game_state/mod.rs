@@ -17,8 +17,8 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use snafu::Snafu;
 use crate::game::GameRef;
+use snafu::Snafu;
 use std::borrow::Cow;
 use std::fmt::{Display, Formatter, Result as FormatterResult};
 
@@ -46,24 +46,32 @@ pub trait GameState {
 
     /// Called once each time this `GameState` becomes the active one.
     #[allow(unused_variables)]
-    fn activate(&mut self, game_ref: &mut GameRef) -> GameStateResult { Ok(()) }
+    fn activate(&mut self, game_ref: &mut GameRef) -> GameStateResult {
+        Ok(())
+    }
 
     /// Called once each time this `GameState` stops being the active one.
     #[allow(unused_variables)]
-    fn deactivate(&mut self, game_ref: &mut GameRef) -> GameStateResult { Ok(()) }
+    fn deactivate(&mut self, game_ref: &mut GameRef) -> GameStateResult {
+        Ok(())
+    }
 
     /// When this `GameState` is underneath one or more other `GameState`s, this method will be
     /// called. These are called in the order they are in the game state stack, from bottom to top.
 
     #[allow(unused_variables)]
-    fn background_update(&mut self, game_ref: &mut GameRef) -> GameStateResult { Ok(()) }
+    fn background_update(&mut self, game_ref: &mut GameRef) -> GameStateResult {
+        Ok(())
+    }
 
     /// Called once each game tick; used to update game state.
     fn update(&mut self, game_ref: &mut GameRef) -> GameStateUpdateResult;
 
     /// When this `GameState` is underneath one or more other `GameState`s, this method will be
     /// called. These are called in the order they are in the game state stack, from bottom to top.
-    fn background_draw(&mut self, game_ref: &mut GameRef) -> GameStateResult { self.draw(game_ref) }
+    fn background_draw(&mut self, game_ref: &mut GameRef) -> GameStateResult {
+        self.draw(game_ref)
+    }
 
     /// Called once each game tick; used to draw to the screen. These are called in the order they
     /// are in the game state stack, from bottom to top.

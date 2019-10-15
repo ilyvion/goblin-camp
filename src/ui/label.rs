@@ -19,9 +19,9 @@
 */
 
 use crate::drawable_prerequisites_impl;
-use crate::ui::{Position, Size, Drawable};
+use crate::ui::{Drawable, Position, Size};
 use crate::util::SafeConsole;
-use tcod::{TextAlignment, colors};
+use tcod::{colors, TextAlignment};
 
 pub struct Label {
     position: Position,
@@ -36,7 +36,11 @@ impl Label {
     pub fn new<S: AsRef<str>>(text: S, position: Position) -> Self {
         Self::new_with_alignment(text, position, TextAlignment::Center)
     }
-    pub fn new_with_alignment<S: AsRef<str>>(text: S, position: Position, alignment: TextAlignment) -> Self {
+    pub fn new_with_alignment<S: AsRef<str>>(
+        text: S,
+        position: Position,
+        alignment: TextAlignment,
+    ) -> Self {
         Self {
             position,
             size: Size::new(0, 1),

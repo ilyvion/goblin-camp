@@ -17,8 +17,8 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use tcod::{Console, BackgroundFlag, TextAlignment, Color};
 use crate::ui::{Position, Size};
+use tcod::{BackgroundFlag, Color, Console, TextAlignment};
 
 /// Re-implements the `Console` trait from `tcod`, but makes every method object-safe so it can be
 /// used as a `dyn` trait.
@@ -75,9 +75,12 @@ pub trait SafeConsole {
     fn set_char(&mut self, position: Position, c: char);
 
     /// Changes the background color of the specified cell
-    fn set_char_background(&mut self, position: Position,
-                           color: Color,
-                           background_flag: BackgroundFlag);
+    fn set_char_background(
+        &mut self,
+        position: Position,
+        color: Color,
+        background_flag: BackgroundFlag,
+    );
 
     /// Changes the foreground color of the specified cell
     fn set_char_foreground(&mut self, position: Position, color: Color);
@@ -88,15 +91,17 @@ pub trait SafeConsole {
     /// see [BackgroundFlag](./enum.BackgroundFlag.html).
     /// 2. Updates its foreground color based on the default color set in the console
     /// 3. Sets its ASCII value to `glyph`
-    fn put_char(&mut self,
-                position: Position, glyph: char,
-                background_flag: BackgroundFlag);
+    fn put_char(&mut self, position: Position, glyph: char, background_flag: BackgroundFlag);
 
     /// Updates every propert of the given cell using explicit colors for the
     /// background and foreground.
-    fn put_char_ex(&mut self,
-                   position: Position, glyph: char,
-                   foreground: Color, background: Color);
+    fn put_char_ex(
+        &mut self,
+        position: Position,
+        glyph: char,
+        foreground: Color,
+        background: Color,
+    );
 
     /// Clears the console with its default background color
     fn clear(&mut self);
@@ -112,43 +117,42 @@ pub trait SafeConsole {
     /// Prints the text at the specified location in a rectangular area with
     /// the dimensions: (width; height). If the text is longer than the width the
     /// newlines will be inserted.
-    fn print_rect(&mut self,
-                  position: Position,
-                  size: Size,
-                  text: &str);
+    fn print_rect(&mut self, position: Position, size: Size, text: &str);
 
     /// Prints the text at the specified location with an explicit
     /// [BackgroundFlag](./enum.BackgroundFlag.html) and
     /// [TextAlignment](./enum.TextAlignment.html).
-    fn print_ex(&mut self,
-                position: Position,
-                background_flag: BackgroundFlag,
-                alignment: TextAlignment,
-                text: &str);
+    fn print_ex(
+        &mut self,
+        position: Position,
+        background_flag: BackgroundFlag,
+        alignment: TextAlignment,
+        text: &str,
+    );
 
     /// Combines the functions of `print_ex` and `print_rect`
-    fn print_rect_ex(&mut self,
-                     position: Position,
-                     size: Size,
-                     background_flag: BackgroundFlag,
-                     alignment: TextAlignment,
-                     text: &str);
+    fn print_rect_ex(
+        &mut self,
+        position: Position,
+        size: Size,
+        background_flag: BackgroundFlag,
+        alignment: TextAlignment,
+        text: &str,
+    );
 
     /// Compute the height of a wrapped text printed using `print_rect` or `print_rect_ex`.
-    fn get_height_rect(&self,
-                       position: Position,
-                       size: Size,
-                       text: &str) -> i32;
-
+    fn get_height_rect(&self, position: Position, size: Size, text: &str) -> i32;
 
     /// Fill a rectangle with the default background colour.
     ///
     /// If `clear` is true, set each cell's character to space (ASCII 32).
-    fn rect(&mut self,
-            position: Position,
-            size: Size,
-            clear: bool,
-            background_flag: BackgroundFlag);
+    fn rect(
+        &mut self,
+        position: Position,
+        size: Size,
+        clear: bool,
+        background_flag: BackgroundFlag,
+    );
 
     /// Draw a horizontal line.
     ///
@@ -170,8 +174,14 @@ pub trait SafeConsole {
     ///
     /// If the `title` is specified, it will be printed on top of the rectangle
     /// using inverted colours.
-    fn print_frame(&mut self, position: Position, size: Size,
-                   clear: bool, background_flag: BackgroundFlag, title: Option<&str>);
+    fn print_frame(
+        &mut self,
+        position: Position,
+        size: Size,
+        clear: bool,
+        background_flag: BackgroundFlag,
+        title: Option<&str>,
+    );
 }
 
 pub struct ConsoleWrapper<'c, C: Console>(&'c mut C);
@@ -245,8 +255,14 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
         self.0.set_char(position.x, position.y, c)
     }
 
-    fn set_char_background(&mut self, position: Position, color: Color, background_flag: BackgroundFlag) {
-        self.0.set_char_background(position.x, position.y, color, background_flag)
+    fn set_char_background(
+        &mut self,
+        position: Position,
+        color: Color,
+        background_flag: BackgroundFlag,
+    ) {
+        self.0
+            .set_char_background(position.x, position.y, color, background_flag)
     }
 
     fn set_char_foreground(&mut self, position: Position, color: Color) {
@@ -254,11 +270,19 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
     }
 
     fn put_char(&mut self, position: Position, glyph: char, background_flag: BackgroundFlag) {
-        self.0.put_char(position.x, position.y, glyph, background_flag)
+        self.0
+            .put_char(position.x, position.y, glyph, background_flag)
     }
 
-    fn put_char_ex(&mut self, position: Position, glyph: char, foreground: Color, background: Color) {
-        self.0.put_char_ex(position.x, position.y, glyph, foreground, background)
+    fn put_char_ex(
+        &mut self,
+        position: Position,
+        glyph: char,
+        foreground: Color,
+        background: Color,
+    ) {
+        self.0
+            .put_char_ex(position.x, position.y, glyph, foreground, background)
     }
 
     fn clear(&mut self) {
@@ -270,34 +294,93 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
     }
 
     fn print_rect(&mut self, position: Position, size: Size, text: &str) {
-        self.0.print_rect(position.x, position.y, size.width, size.height, text)
+        self.0
+            .print_rect(position.x, position.y, size.width, size.height, text)
     }
 
-    fn print_ex(&mut self, position: Position, background_flag: BackgroundFlag, alignment: TextAlignment, text: &str) {
-        self.0.print_ex(position.x, position.y, background_flag, alignment, text)
+    fn print_ex(
+        &mut self,
+        position: Position,
+        background_flag: BackgroundFlag,
+        alignment: TextAlignment,
+        text: &str,
+    ) {
+        self.0
+            .print_ex(position.x, position.y, background_flag, alignment, text)
     }
 
-    fn print_rect_ex(&mut self, position: Position, size: Size, background_flag: BackgroundFlag, alignment: TextAlignment, text: &str) {
-        self.0.print_rect_ex(position.x, position.y, size.width, size.height, background_flag, alignment, text)
+    fn print_rect_ex(
+        &mut self,
+        position: Position,
+        size: Size,
+        background_flag: BackgroundFlag,
+        alignment: TextAlignment,
+        text: &str,
+    ) {
+        self.0.print_rect_ex(
+            position.x,
+            position.y,
+            size.width,
+            size.height,
+            background_flag,
+            alignment,
+            text,
+        )
     }
 
     fn get_height_rect(&self, position: Position, size: Size, text: &str) -> i32 {
-        self.0.get_height_rect(position.x, position.y, size.width, size.height, text)
+        self.0
+            .get_height_rect(position.x, position.y, size.width, size.height, text)
     }
 
-    fn rect(&mut self, position: Position, size: Size, clear: bool, background_flag: BackgroundFlag) {
-        self.0.rect(position.x, position.y, size.width, size.height, clear, background_flag)
+    fn rect(
+        &mut self,
+        position: Position,
+        size: Size,
+        clear: bool,
+        background_flag: BackgroundFlag,
+    ) {
+        self.0.rect(
+            position.x,
+            position.y,
+            size.width,
+            size.height,
+            clear,
+            background_flag,
+        )
     }
 
-    fn horizontal_line(&mut self, position: Position, length: i32, background_flag: BackgroundFlag) {
-        self.0.horizontal_line(position.x, position.y, length, background_flag);
+    fn horizontal_line(
+        &mut self,
+        position: Position,
+        length: i32,
+        background_flag: BackgroundFlag,
+    ) {
+        self.0
+            .horizontal_line(position.x, position.y, length, background_flag);
     }
 
     fn vertical_line(&mut self, position: Position, length: i32, background_flag: BackgroundFlag) {
-        self.0.vertical_line(position.x, position.y, length, background_flag)
+        self.0
+            .vertical_line(position.x, position.y, length, background_flag)
     }
 
-    fn print_frame(&mut self, position: Position, size: Size, clear: bool, background_flag: BackgroundFlag, title: Option<&str>) {
-        self.0.print_frame(position.x, position.y, size.width, size.height, clear, background_flag, title)
+    fn print_frame(
+        &mut self,
+        position: Position,
+        size: Size,
+        clear: bool,
+        background_flag: BackgroundFlag,
+        title: Option<&str>,
+    ) {
+        self.0.print_frame(
+            position.x,
+            position.y,
+            size.width,
+            size.height,
+            clear,
+            background_flag,
+            title,
+        )
     }
 }

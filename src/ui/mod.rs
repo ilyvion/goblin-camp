@@ -18,24 +18,24 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use std::ops::Add;
 use crate::util::SafeConsole;
+use std::ops::Add;
 
-mod message_box;
+mod button;
 mod dialog;
 mod label;
-mod button;
+mod message_box;
 mod ui_container;
 
-pub use message_box::*;
+pub use button::*;
 pub use dialog::*;
 pub use label::*;
-pub use button::*;
+pub use message_box::*;
 pub use ui_container::*;
 
 use crate::game::Input;
-use std::fmt::{Display, Formatter, Result as FormatResult};
 use std::any::Any;
+use std::fmt::{Display, Formatter, Result as FormatResult};
 
 #[derive(Copy, Clone, Default)]
 pub struct Position {
@@ -121,7 +121,10 @@ pub struct Rectangle {
 
 impl Rectangle {
     fn contains_position(&self, position: Position) -> bool {
-        position.x >= self.position.x && position.x < self.position.x + self.size.width && position.y >= self.position.y && position.y < self.position.y + self.size.height
+        position.x >= self.position.x
+            && position.x < self.position.x + self.size.width
+            && position.y >= self.position.y
+            && position.y < self.position.y + self.size.height
     }
 }
 
@@ -144,8 +147,18 @@ pub struct MenuResult {
 }
 
 impl MenuResult {
-    pub fn new(hit: HitResult, kind: Option<RespondKind>, dismiss: bool, data: Option<Box<dyn Any>>) -> Self {
-        Self { hit, kind, _dismiss: dismiss, data }
+    pub fn new(
+        hit: HitResult,
+        kind: Option<RespondKind>,
+        dismiss: bool,
+        data: Option<Box<dyn Any>>,
+    ) -> Self {
+        Self {
+            hit,
+            kind,
+            _dismiss: dismiss,
+            data,
+        }
     }
 
     pub fn hit(hit: HitResult) -> Self {
@@ -210,7 +223,6 @@ pub trait Drawable: Positioned + Sized + VisibilityFn {
 }
 
 // TODO: Scrollable
-
 
 //pub struct Panel {
 //    position: Position,

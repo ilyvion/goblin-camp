@@ -19,10 +19,10 @@
 */
 
 use crate::drawable_prerequisites_impl;
-use crate::ui::{Position, Drawable, Size, Positioned, Sized, MenuResult};
 use crate::game::{GameRef, Input};
-use tcod::{Console, BackgroundFlag};
+use crate::ui::{Drawable, MenuResult, Position, Positioned, Size, Sized};
 use crate::util::SafeConsole;
+use tcod::{BackgroundFlag, Console};
 
 pub struct Dialog<D: Drawable> {
     position: Position,
@@ -36,7 +36,10 @@ pub struct Dialog<D: Drawable> {
 impl<D: Drawable> Dialog<D> {
     pub fn new(game_ref: &mut GameRef, contents: D, title: Option<String>, size: Size) -> Self {
         Self {
-            position: Position::new((game_ref.root.width() - size.width) / 2, (game_ref.root.height() - size.height) / 2),
+            position: Position::new(
+                (game_ref.root.width() - size.width) / 2,
+                (game_ref.root.height() - size.height) / 2,
+            ),
             size,
             visibility_fn: None,
 
@@ -50,7 +53,13 @@ drawable_prerequisites_impl!(Dialog<D: Drawable>);
 
 impl<D: Drawable> Drawable for Dialog<D> {
     fn draw(&self, _: Position, console: &mut dyn SafeConsole) {
-        console.print_frame(self.position(), self.size(), true, BackgroundFlag::Set, self.title.as_ref().map(|s| s.as_str()));
+        console.print_frame(
+            self.position(),
+            self.size(),
+            true,
+            BackgroundFlag::Set,
+            self.title.as_ref().map(|s| s.as_str()),
+        );
         self.contents.draw(self.position(), console);
     }
 

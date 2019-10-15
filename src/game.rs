@@ -18,15 +18,15 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use tcod::{input, Console, colors};
-use tcod::console::Root;
-use snafu::{Snafu, ResultExt};
-use slog::{o, debug, trace};
-use crate::game::game_state::{GameState, GameStateChange};
 use crate::game::game_state::main_menu::MainMenu;
-use crate::Config;
+use crate::game::game_state::{GameState, GameStateChange};
 use crate::ui::Position;
-use tcod::input::{Mouse, Key};
+use crate::Config;
+use slog::{debug, o, trace};
+use snafu::{ResultExt, Snafu};
+use tcod::console::Root;
+use tcod::input::{Key, Mouse};
+use tcod::{colors, input, Console};
 
 pub mod game_state;
 
@@ -55,15 +55,32 @@ impl Game {
         let method_logger = logger.new(o!("Method" => "Game::new"));
 
         let char_size = tcod::system::get_char_size();
-        debug!(method_logger, "Character size: ({}, {})", char_size.0, char_size.1);
-        debug!(method_logger, "Window size: ({}, {})", config.window_width as i32 / char_size.0, config.window_height as i32 / char_size.1);
+        debug!(
+            method_logger,
+            "Character size: ({}, {})", char_size.0, char_size.1
+        );
+        debug!(
+            method_logger,
+            "Window size: ({}, {})",
+            config.window_width as i32 / char_size.0,
+            config.window_height as i32 / char_size.1
+        );
 
         let root = Root::initializer()
-            .size(config.window_width as i32 / char_size.0, config.window_height as i32 / char_size.1)
+            .size(
+                config.window_width as i32 / char_size.0,
+                config.window_height as i32 / char_size.1,
+            )
             .title(Game::NAME)
             .init();
 
-        Self { root, game_states: vec![MainMenu::game_state()], logger, config, previous_mouse: Mouse::default() }
+        Self {
+            root,
+            game_states: vec![MainMenu::game_state()],
+            logger,
+            config,
+            previous_mouse: Mouse::default(),
+        }
     }
 
     pub fn run(&mut self) -> Result<()> {
@@ -71,7 +88,11 @@ impl Game {
         let mut game_state_changed = true;
         while !self.root.window_closed() {
             let current_game_state_length = self.game_states.len();
-            trace!(method_logger, "Current game states size: {}", current_game_state_length);
+            trace!(
+                method_logger,
+                "Current game states size: {}",
+                current_game_state_length
+            );
 
             if current_game_state_length == 0 {
                 debug!(method_logger, "Out of game states; returning");
@@ -89,18 +110,36 @@ impl Game {
             };
 
             if game_state_changed {
-                let current_game_state = self.game_states.get_mut(current_game_state_length - 1).unwrap();
-                debug!(method_logger, "Calling activate on game state {}", current_game_state.name());
-                current_game_state.activate(&mut game_ref).context(GameStateError)?;
+                let current_game_state = self
+                    .game_states
+                    .get_mut(current_game_state_length - 1)
+                    .unwrap();
+                debug!(
+                    method_logger,
+                    "Calling activate on game state {}",
+                    current_game_state.name()
+                );
+                current_game_state
+                    .activate(&mut game_ref)
+                    .context(GameStateError)?;
                 game_state_changed = false;
             }
 
             let game_state_change = 'update: loop {
                 for i in 0..current_game_state_length {
                     if i != current_game_state_length - 1 {
-                        self.game_states.get_mut(i).unwrap().background_update(&mut game_ref).context(GameStateError)?;
+                        self.game_states
+                            .get_mut(i)
+                            .unwrap()
+                            .background_update(&mut game_ref)
+                            .context(GameStateError)?;
                     } else {
-                        break 'update self.game_states.get_mut(i).unwrap().update(&mut game_ref).context(GameStateError)?;
+                        break 'update self
+                            .game_states
+                            .get_mut(i)
+                            .unwrap()
+                            .update(&mut game_ref)
+                            .context(GameStateError)?;
                     }
                 }
             };
@@ -121,20 +160,41 @@ impl Game {
             'draw: loop {
                 for i in 0..current_game_state_length {
                     if i != current_game_state_length - 1 {
-                        self.game_states.get_mut(i).unwrap().background_draw(&mut game_ref).context(GameStateError)?;
+                        self.game_states
+                            .get_mut(i)
+                            .unwrap()
+                            .background_draw(&mut game_ref)
+                            .context(GameStateError)?;
                     } else {
-                        self.game_states.get_mut(i).unwrap().draw(&mut game_ref).context(GameStateError)?;
+                        self.game_states
+                            .get_mut(i)
+                            .unwrap()
+                            .draw(&mut game_ref)
+                            .context(GameStateError)?;
                         break 'draw;
                     }
                 }
-            };
+            }
             game_ref.root.flush();
 
-            let deactivate = if let GameStateChange::NoOp = &game_state_change { false } else { true };
+            let deactivate = if let GameStateChange::NoOp = &game_state_change {
+                false
+            } else {
+                true
+            };
             if deactivate {
-                let current_game_state = self.game_states.get_mut(current_game_state_length - 1).unwrap();
-                debug!(method_logger, "Calling deactivate on game state {}", current_game_state.name());
-                current_game_state.deactivate(&mut game_ref).context(GameStateError)?;
+                let current_game_state = self
+                    .game_states
+                    .get_mut(current_game_state_length - 1)
+                    .unwrap();
+                debug!(
+                    method_logger,
+                    "Calling deactivate on game state {}",
+                    current_game_state.name()
+                );
+                current_game_state
+                    .deactivate(&mut game_ref)
+                    .context(GameStateError)?;
                 game_state_changed = true;
             }
 
