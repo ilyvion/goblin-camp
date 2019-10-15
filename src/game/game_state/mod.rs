@@ -1,5 +1,4 @@
 /*
-    Copyright 2010-2011 Ilkka Halila
     Copyright 2019 Alexander Krivács Schrøder
 
     This file is part of Goblin Camp.
@@ -18,26 +17,65 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use snafu::{Snafu};
+use snafu::Snafu;
 use crate::game::GameRef;
+use std::borrow::Cow;
+use std::fmt::{Display, Formatter, Result as FormatterResult};
 
 #[derive(Debug, Snafu, Eq, PartialEq)]
-pub enum Error {
-}
+pub enum GameStateError {}
 
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type GameStateResult = std::result::Result<(), GameStateError>;
+pub type GameStateUpdateResult = std::result::Result<GameStateChange, GameStateError>;
 
 pub enum GameStateChange {
     Replace(Box<dyn GameState>),
     Push(Box<dyn GameState>),
+    PopPush(Box<dyn GameState>),
     Pop,
     NoOp,
-    EndGame
+    EndGame,
 }
 
+/// Represents a state the game can be in, like main menu, game, pause screen, message box,
+/// etc. These can be stacked, and will be told when they are active (i.e. on top) or not,
+/// and they can behave accordingly.
 pub trait GameState {
-    fn handle(&mut self, game_ref: GameRef) -> Result<GameStateChange>;
+    /// Provide the name of this `GameState`.
+    fn name(&self) -> Cow<'_, str>;
+
+    /// Called once each time this `GameState` becomes the active one.
+    #[allow(unused_variables)]
+    fn activate(&mut self, game_ref: &mut GameRef) -> GameStateResult { Ok(()) }
+
+    /// Called once each time this `GameState` stops being the active one.
+    #[allow(unused_variables)]
+    fn deactivate(&mut self, game_ref: &mut GameRef) -> GameStateResult { Ok(()) }
+
+    /// When this `GameState` is underneath one or more other `GameState`s, this method will be
+    /// called. These are called in the order they are in the game state stack, from bottom to top.
+
+    #[allow(unused_variables)]
+    fn background_update(&mut self, game_ref: &mut GameRef) -> GameStateResult { Ok(()) }
+
+    /// Called once each game tick; used to update game state.
+    fn update(&mut self, game_ref: &mut GameRef) -> GameStateUpdateResult;
+
+    /// When this `GameState` is underneath one or more other `GameState`s, this method will be
+    /// called. These are called in the order they are in the game state stack, from bottom to top.
+    fn background_draw(&mut self, game_ref: &mut GameRef) -> GameStateResult { self.draw(game_ref) }
+
+    /// Called once each game tick; used to draw to the screen. These are called in the order they
+    /// are in the game state stack, from bottom to top.
+    fn draw(&mut self, game_ref: &mut GameRef) -> GameStateResult;
+}
+
+impl Display for dyn GameState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FormatterResult {
+        write!(f, "{}", self.name())
+    }
 }
 
 pub mod main_menu;
 
+pub mod game;

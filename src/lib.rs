@@ -24,6 +24,10 @@ pub mod coordinate;
 
 pub mod game;
 
+pub mod ui;
+
+pub mod util;
+
 use clap::ArgMatches;
 
 #[derive(Clone, Debug)]

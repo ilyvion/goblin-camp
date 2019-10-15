@@ -19,6 +19,8 @@
 */
 
 use goblin_camp::game::Game;
+use goblin_camp::data::random::DefaultGenerator;
+use goblin_camp::data::paths::Paths;
 use std::error::Error;
 use std::process;
 use clap::{App, load_yaml};
@@ -26,6 +28,10 @@ use goblin_camp::Config;
 use slog::{o, Drain, info};
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // Create all "singleton" types
+    let _generator = DefaultGenerator::default();
+    let _paths = Paths::new()?;
+
     // Load phase.
     let config = {
         let yaml = load_yaml!("cli.yml");
@@ -44,6 +50,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let root_logger = slog::Logger::root(drain, o!());
 
     info!(root_logger, "Starting {} {}", Game::NAME, Game::VERSION);
+
+    // - Load settings
+    // - Load font?
+    // - Parse command line? (boottest, dev, nodumps)
+    // - Show loading screen while doing heavy I/O?
+
+    // Show main menu, unless boottest, else shut down
     let mut game = Game::new(root_logger.clone(), config);
     game.run().unwrap_or_else(|err| {
         eprintln!("Error while running the game: {}", err);

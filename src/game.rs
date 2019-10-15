@@ -18,18 +18,21 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use tcod::{input, Console, colors};
 use tcod::console::Root;
 use snafu::{Snafu, ResultExt};
-use slog::{o, debug};
+use slog::{o, debug, trace};
 use crate::game::game_state::{GameState, GameStateChange};
 use crate::game::game_state::main_menu::MainMenu;
 use crate::Config;
+use crate::ui::Position;
+use tcod::input::{Mouse, Key};
 
 pub mod game_state;
 
 #[derive(Debug, Snafu, Eq, PartialEq)]
 pub enum Error {
-    GameStateError { source: game_state::Error },
+    GameStateError { source: game_state::GameStateError },
     EndGame,
 }
 
@@ -40,6 +43,7 @@ pub struct Game {
     game_states: Vec<Box<dyn GameState>>,
     logger: slog::Logger,
     config: Config,
+    previous_mouse: Mouse,
 }
 
 impl Game {
@@ -59,58 +63,167 @@ impl Game {
             .title(Game::NAME)
             .init();
 
-        Self { root, game_states: vec![MainMenu::game_state()], logger, config }
+        Self { root, game_states: vec![MainMenu::game_state()], logger, config, previous_mouse: Mouse::default() }
     }
 
     pub fn run(&mut self) -> Result<()> {
         let method_logger = self.logger.new(o!("Method" => "Game::run"));
+        let mut game_state_changed = true;
         while !self.root.window_closed() {
-            let current_game_state_index = self.game_states.len();
-            debug!(method_logger, "Current game states size: {}", current_game_state_index);
+            let current_game_state_length = self.game_states.len();
+            trace!(method_logger, "Current game states size: {}", current_game_state_length);
 
-            if current_game_state_index == 0 {
+            if current_game_state_length == 0 {
                 debug!(method_logger, "Out of game states; returning");
                 return Ok(());
             }
-            let current_game_state = self.game_states.get_mut(current_game_state_index - 1).unwrap();
 
-            let game_ref = GameRef {
+            let input = self.handle_input();
+            let mut game_ref = GameRef {
                 root: &mut self.root,
                 config: &self.config,
                 logger: &self.logger,
                 is_running: false,
+                game_state_level: current_game_state_length,
+                input,
             };
 
-            let game_state_change = current_game_state.handle(game_ref).context(GameStateError)?;
+            if game_state_changed {
+                let current_game_state = self.game_states.get_mut(current_game_state_length - 1).unwrap();
+                debug!(method_logger, "Calling activate on game state {}", current_game_state.name());
+                current_game_state.activate(&mut game_ref).context(GameStateError)?;
+                game_state_changed = false;
+            }
+
+            let game_state_change = 'update: loop {
+                for i in 0..current_game_state_length {
+                    if i != current_game_state_length - 1 {
+                        self.game_states.get_mut(i).unwrap().background_update(&mut game_ref).context(GameStateError)?;
+                    } else {
+                        break 'update self.game_states.get_mut(i).unwrap().update(&mut game_ref).context(GameStateError)?;
+                    }
+                }
+            };
+
+//            // Iterator based alternative. Not much better...
+//            let game_state_change = self.game_states.iter_mut().enumerate().map(|(i, state)| {
+//                if i != current_game_state_length - 1 {
+//                    state.background_update(&mut game_ref).context(GameStateError)?;
+//                    Ok(None)
+//                } else {
+//                    Ok(Some(state.update(&mut game_ref).context(GameStateError)?))
+//                }
+//            } ).collect::<Result<Vec<_>, _>>()?.into_iter().filter_map(|o| o).next().unwrap();
+
+            game_ref.root.set_default_background(colors::BLACK);
+            game_ref.root.set_default_foreground(colors::WHITE);
+            game_ref.root.clear();
+            'draw: loop {
+                for i in 0..current_game_state_length {
+                    if i != current_game_state_length - 1 {
+                        self.game_states.get_mut(i).unwrap().background_draw(&mut game_ref).context(GameStateError)?;
+                    } else {
+                        self.game_states.get_mut(i).unwrap().draw(&mut game_ref).context(GameStateError)?;
+                        break 'draw;
+                    }
+                }
+            };
+            game_ref.root.flush();
+
+            let deactivate = if let GameStateChange::NoOp = &game_state_change { false } else { true };
+            if deactivate {
+                let current_game_state = self.game_states.get_mut(current_game_state_length - 1).unwrap();
+                debug!(method_logger, "Calling deactivate on game state {}", current_game_state.name());
+                current_game_state.deactivate(&mut game_ref).context(GameStateError)?;
+                game_state_changed = true;
+            }
+
             match game_state_change {
                 GameStateChange::Replace(next_game_state) => {
-                    debug!(method_logger, "Game state change: Replace");
+                    trace!(method_logger, "Game state change: Replace");
                     self.game_states.clear();
                     self.game_states.push(next_game_state);
                 }
                 GameStateChange::Push(next_game_state) => {
-                    debug!(method_logger, "Game state change: Push");
+                    trace!(method_logger, "Game state change: Push");
                     self.game_states.push(next_game_state)
-                },
-                GameStateChange::Pop => {
-                    debug!(method_logger, "Game state change: Pop");
+                }
+                GameStateChange::PopPush(next_game_state) => {
+                    trace!(method_logger, "Game state change: PopPush");
                     self.game_states.pop();
-                },
+                    self.game_states.push(next_game_state)
+                }
+                GameStateChange::Pop => {
+                    trace!(method_logger, "Game state change: Pop");
+                    self.game_states.pop();
+                }
                 GameStateChange::EndGame => {
-                    debug!(method_logger, "Game state change: EndGame");
+                    trace!(method_logger, "Game state change: EndGame");
                     self.game_states.clear()
-                },
+                }
                 GameStateChange::NoOp => {
-                    debug!(method_logger, "Game state change: NoOp");
-                },
+                    trace!(method_logger, "Game state change: NoOp");
+                }
             }
-
-            // Handling user input
-            // Updating the gamestate
-            // Rendering the results
         }
 
         Ok(())
+    }
+
+    pub fn handle_input(&mut self) -> Input {
+        let mut raw_events = vec![];
+        let mut key_event = None;
+        let mut mouse_event = None;
+        for (flags, event) in tcod::input::events() {
+            raw_events.push(event);
+            if flags.intersects(input::KEY_RELEASE) && key_event.is_none() {
+                if let input::Event::Key(key) = event {
+                    key_event = Some(KeyEvent { raw: key });
+                }
+            } else if flags.intersects(input::MOUSE) && mouse_event.is_none() {
+                if let input::Event::Mouse(mouse) = event {
+                    mouse_event = Some(mouse.into());
+                    self.previous_mouse = mouse;
+                }
+            }
+        }
+
+        Input {
+            raw_events,
+            key_event: key_event.unwrap_or_default(),
+            mouse_event: mouse_event.unwrap_or_else(|| self.previous_mouse.into()),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Input {
+    pub raw_events: Vec<input::Event>,
+    pub key_event: KeyEvent,
+    pub mouse_event: MouseEvent,
+}
+
+#[derive(Copy, Clone, Default)]
+pub struct KeyEvent {
+    pub raw: Key,
+}
+
+#[derive(Copy, Clone, Default)]
+pub struct MouseEvent {
+    pub raw: Mouse,
+    pub character_position: Position,
+    pub screen_position: Position,
+    pub clicked: bool,
+}
+
+impl From<Mouse> for MouseEvent {
+    fn from(mouse: Mouse) -> Self {
+        Self {
+            raw: mouse,
+            character_position: Position::new(mouse.cx as i32, mouse.cy as i32),
+            screen_position: Position::new(mouse.x as i32, mouse.y as i32),
+            clicked: mouse.lbutton_pressed,
+        }
     }
 }
 
@@ -119,4 +232,6 @@ pub struct GameRef<'g> {
     pub config: &'g Config,
     pub logger: &'g slog::Logger,
     pub is_running: bool,
+    pub game_state_level: usize,
+    pub input: Input,
 }

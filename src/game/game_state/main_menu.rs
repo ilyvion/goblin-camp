@@ -18,42 +18,60 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::game::game_state::{GameState, GameStateChange};
-use crate::game::game_state::Result;
+use crate::game::game_state::{GameState, GameStateChange, GameStateResult};
+use crate::game::game_state::GameStateUpdateResult;
 use tcod::TextAlignment;
 use tcod::colors::{WHITE, BLACK, CELADON, GREY};
 use tcod::console::BackgroundFlag::{Default as BackgroundDefault, Set};
 use crate::game::{Game, GameRef};
-use tcod::input::{Event, KEY_RELEASE, MOUSE};
+use tcod::input::Event;
 use tcod::console::{Console, Root};
 use slog::{o, debug};
 use derivative::Derivative;
+use std::borrow::Cow;
+use crate::game::game_state::game::ConfirmNewGame;
 
-pub struct MainMenu;
+pub struct MainMenu {
+    logger: Option<slog::Logger>,
+    render_data: Option<RenderData>,
+}
 
 impl MainMenu {
     const ENTRIES: [MainMenuEntry; 9] = [
-        MainMenuEntry { label: "New Game", shortcut: 'n', active: ActiveState::Always, new_state: MainMenu::quit_game_state },
+        MainMenuEntry { label: "New Game", shortcut: 'n', active: ActiveState::Always, new_state: ConfirmNewGame::game_state },
         MainMenuEntry { label: "Continue", shortcut: 'c', active: ActiveState::IfRunning, new_state: MainMenu::quit_game_state },
         MainMenuEntry { label: "Load", shortcut: 'l', active: ActiveState::HasSaves, new_state: MainMenu::quit_game_state },
         MainMenuEntry { label: "Save", shortcut: 's', active: ActiveState::IfRunning, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Settings", shortcut: 'o', active: ActiveState::Always, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Keys", shortcut: 'k', active: ActiveState::Always, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Mods", shortcut: 'm', active: ActiveState::Always, new_state: MainMenu::quit_game_state },
-        MainMenuEntry { label: "Tile sets", shortcut: 't', active: ActiveState::Always, new_state: MainMenu::quit_game_state },
+        MainMenuEntry { label: "Settings", shortcut: 'o', active: ActiveState::Never, new_state: MainMenu::quit_game_state },
+        MainMenuEntry { label: "Keys", shortcut: 'k', active: ActiveState::Never, new_state: MainMenu::quit_game_state },
+        MainMenuEntry { label: "Mods", shortcut: 'm', active: ActiveState::Never, new_state: MainMenu::quit_game_state },
+        MainMenuEntry { label: "Tile sets", shortcut: 't', active: ActiveState::Never, new_state: MainMenu::quit_game_state },
         MainMenuEntry { label: "Exit", shortcut: 'q', active: ActiveState::Always, new_state: MainMenu::quit_game_state },
     ];
 
     const WIDTH: i32 = 20;
 
-    pub fn game_state() -> Box<dyn GameState> { Box::new(MainMenu) }
+    pub fn game_state() -> Box<dyn GameState> { Box::new(MainMenu { logger: None, render_data: None }) }
 
     fn quit_game_state() -> GameStateChange { GameStateChange::EndGame }
+
+    fn render(&mut self, game_ref: &mut GameRef, background: bool) -> GameStateResult {
+        let render_data = self.render_data.as_mut().unwrap();
+
+        Self::render_menu(game_ref.root, render_data.clone());
+        Self::render_menu_entries(game_ref, render_data.clone());
+
+        if !background && !render_data.render_credits_done {
+            render_data.render_credits_done = game_ref.root.render_credits(render_data.edge_x + 5, render_data.edge_y + 25, true);
+        }
+
+        Ok(())
+    }
 
     fn render_menu(root: &mut Root, render_data: RenderData) {
         root.set_default_foreground(WHITE);
         root.set_default_background(BLACK);
-        root.clear();
+
         root.print_frame(render_data.edge_x, render_data.edge_y, Self::WIDTH, render_data.height, true, BackgroundDefault, Some("Main Menu"));
         root.set_alignment(TextAlignment::Center);
         root.set_background_flag(Set);
@@ -62,40 +80,40 @@ impl MainMenu {
         root.print(render_data.edge_x + Self::WIDTH / 2, render_data.edge_y - 3, format!("{} {}", Game::NAME, Game::VERSION));
     }
 
-    fn render_menu_entries(root: &mut Root, render_data: RenderData) {
-        root.set_default_foreground(WHITE);
+    fn render_menu_entries(game_ref: &mut GameRef, render_data: RenderData) {
+        game_ref.root.set_default_foreground(WHITE);
 
         for (i, entry) in MainMenu::ENTRIES.iter().enumerate() {
-            if render_data.selected.map_or(false, |selected_entry_shortcut| selected_entry_shortcut == entry.shortcut) {
-                root.set_default_foreground(BLACK);
-                root.set_default_background(WHITE);
+            if render_data.selected.map_or(false, |selected_entry| selected_entry == entry) {
+                game_ref.root.set_default_foreground(BLACK);
+                game_ref.root.set_default_background(WHITE);
             } else {
-                root.set_default_foreground(WHITE);
-                root.set_default_background(BLACK);
+                game_ref.root.set_default_foreground(WHITE);
+                game_ref.root.set_default_background(BLACK);
             }
 
-            if !entry.is_active() {
-                root.set_default_foreground(GREY);
+            if !entry.is_active(game_ref) {
+                game_ref.root.set_default_foreground(GREY);
             }
 
-            root.print(render_data.edge_x + Self::WIDTH / 2, render_data.edge_y + ((i + 1) * 2) as i32, entry.label);
+            game_ref.root.print(render_data.edge_x + Self::WIDTH / 2, render_data.edge_y + ((i + 1) * 2) as i32, entry.label);
         }
     }
 
-    fn handle_input(render_data: RenderData, input_data: &mut InputData) -> Option<Result<GameStateChange>> {
+    fn handle_input(game_ref: &mut GameRef, render_data: RenderData, input_data: &mut InputData) -> Option<GameStateUpdateResult> {
         let method_logger = render_data.logger.new(o!("Method" => "MainMenu::handle_input"));
-        for (flags, event) in tcod::input::events() {
-            if flags.intersects(KEY_RELEASE) {
-                if let Event::Key(key) = event {
+        // TODO: Rewrite to use the Input data directly
+        if let Some(raw_event) = game_ref.input.raw_events.first().cloned() {
+            match raw_event {
+                Event::Key(key) => {
                     for entry in MainMenu::ENTRIES.iter() {
-                        if key.printable == entry.shortcut && entry.is_active() {
+                        if key.printable == entry.shortcut && entry.is_active(game_ref) {
                             debug!(method_logger, "Entry chosen by key"; "entry" => entry.label, "key" => key.printable);
                             return Some(Ok((entry.new_state)()));
                         }
                     }
                 }
-            } else if flags.intersects(MOUSE) {
-                if let Event::Mouse(mouse) = event {
+                Event::Mouse(mouse) => {
                     input_data.selected = if mouse.cx > render_data.edge_x as isize && mouse.cx < (render_data.edge_x + Self::WIDTH) as isize {
                         let selected_line = (mouse.cy - (render_data.edge_y + 2) as isize) as usize;
                         let selected_index = selected_line / 2;
@@ -109,7 +127,7 @@ impl MainMenu {
                     } else if !mouse.lbutton && input_data.l_button_down {
                         input_data.l_button_down = false;
                         if let Some(selected) = input_data.selected {
-                            if selected.is_active() {
+                            if selected.is_active(game_ref) {
                                 let mouse_coordinates = format!("({}, {})", mouse.cx, mouse.cy);
                                 debug!(method_logger, "Entry chosen by mouse"; "entry" => selected.label, "position" => mouse_coordinates);
                                 return Some(Ok((selected.new_state)()));
@@ -125,55 +143,71 @@ impl MainMenu {
 }
 
 impl GameState for MainMenu {
-    fn handle(&mut self, game_ref: GameRef) -> Result<GameStateChange> {
-        let logger = game_ref.logger.new(o!("GameState" => "MainMenu"));
-        let method_logger = logger.new(o!("Method" => "MainMenu::handle"));
-        let root = game_ref.root;
+    fn name(&self) -> Cow<'_, str> {
+        Cow::Borrowed("Main menu")
+    }
 
-        let height: i32 = (MainMenu::ENTRIES.len() * 2 + 2) as i32;
-        let edge_x = root.width() / 2 - Self::WIDTH / 2;
-        let edge_y = root.height() / 2 - height / 2;
-        let mut selected: Option<&MainMenuEntry> = None;
-        let mut render_credits_done = false;
-        let mut l_button_down = false;
+    fn activate(&mut self, game_ref: &mut GameRef) -> GameStateResult {
+        if self.logger.is_none() {
+            let logger = game_ref.logger.new(o!("GameState" => "MainMenu"));
+            self.logger = Some(logger);
 
-        let mut render_data = RenderData {
-            edge_x,
-            edge_y,
-            height,
-            selected: None,
-            logger,
-        };
-        debug!(method_logger, "{:?}", render_data);
+            let root = &game_ref.root;
+            let height: i32 = (MainMenu::ENTRIES.len() * 2 + 2) as i32;
+            let edge_x = root.width() / 2 - Self::WIDTH / 2;
+            let edge_y = root.height() / 2 - height / 2;
 
-        loop {
-            render_data.selected = selected.map(|s| s.shortcut);
-
-            Self::render_menu(root, render_data.clone());
-            Self::render_menu_entries(root, render_data.clone());
-
-            if !render_credits_done {
-                render_credits_done = root.render_credits(edge_x + 5, edge_y + 25, true);
-            }
-
-            root.flush();
-
-            let mut input_data = InputData {
-                l_button_down,
-                selected,
+            let logger = self.logger.as_ref().unwrap().clone();
+            let render_data = RenderData {
+                edge_x,
+                edge_y,
+                height,
+                render_credits_done: false,
+                l_button_down: false,
+                selected: None,
+                logger,
             };
-            let result = Self::handle_input(render_data.clone(), &mut input_data);
+            self.render_data = Some(render_data);
+        } else {
+            let render_data = self.render_data.as_mut().unwrap();
+            render_data.render_credits_done = false;
+            render_data.l_button_down = false;
+            render_data.selected = None;
+        }
+
+        Ok(())
+    }
+
+    fn update(&mut self, game_ref: &mut GameRef) -> GameStateUpdateResult {
+        let render_data = self.render_data.as_mut().unwrap();
+
+        if true {
+            let mut input_data = InputData {
+                l_button_down: render_data.l_button_down,
+                selected: render_data.selected,
+            };
+            let result = Self::handle_input(game_ref, render_data.clone(), &mut input_data);
             if let Some(result) = result {
                 return result;
             }
             let InputData { l_button_down: l_button_down_new, selected: selected_new } = input_data;
-            l_button_down = l_button_down_new;
-            selected = selected_new;
-
-            if root.window_closed() {
-                return Ok(GameStateChange::EndGame);
-            }
+            render_data.l_button_down = l_button_down_new;
+            render_data.selected = selected_new;
         }
+
+        if game_ref.root.window_closed() {
+            Ok(GameStateChange::EndGame)
+        } else {
+            Ok(GameStateChange::NoOp)
+        }
+    }
+
+    fn background_draw(&mut self, game_ref: &mut GameRef) -> GameStateResult {
+        self.render(game_ref, true)
+    }
+
+    fn draw(&mut self, game_ref: &mut GameRef) -> GameStateResult {
+        self.render(game_ref, false)
     }
 }
 
@@ -183,9 +217,11 @@ struct RenderData {
     height: i32,
     edge_x: i32,
     edge_y: i32,
-    #[derivative(Debug="ignore")]
-    selected: Option<char>,
-    #[derivative(Debug="ignore")]
+    render_credits_done: bool,
+    l_button_down: bool,
+    #[derivative(Debug = "ignore")]
+    selected: Option<&'static MainMenuEntry>,
+    #[derivative(Debug = "ignore")]
     logger: slog::Logger,
 }
 
@@ -200,7 +236,7 @@ enum ActiveState {
     Always,
     IfRunning,
     HasSaves,
-    _Never,
+    Never,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -212,10 +248,11 @@ struct MainMenuEntry {
 }
 
 impl MainMenuEntry {
-    pub fn is_active(&self) -> bool {
-        // TODO: Proper logic for deciding whether to show this entry or not
+    pub fn is_active(&self, game_ref: &mut GameRef) -> bool {
+        // TODO: Proper logic for deciding whether this entry is active or not
         match self.active {
             ActiveState::Always => true,
+            ActiveState::IfRunning => game_ref.is_running,
             _ => false
         }
     }
