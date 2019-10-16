@@ -26,7 +26,7 @@ use std::borrow::Cow;
 pub struct ConfirmNewGame;
 
 impl ConfirmNewGame {
-    pub fn game_state() -> GameStateChange {
+    pub fn game_state_change() -> GameStateChange {
         GameStateChange::Push(Box::new(ConfirmNewGame))
     }
 }

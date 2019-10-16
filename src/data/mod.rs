@@ -23,3 +23,47 @@ pub mod data;
 pub mod paths;
 pub mod random;
 pub mod settings;
+
+use paths::{PathProvider, Paths};
+use random::DefaultGenerator;
+use settings::Settings;
+
+use crate::data::random::Generator;
+use slog::{debug, o};
+use snafu::{ResultExt, Snafu};
+
+#[derive(Debug, Snafu)]
+pub enum DataError {
+    PathInitialization { source: paths::Error },
+    SettingsLoad { source: settings::Error },
+}
+
+pub type Result<T, E = DataError> = std::result::Result<T, E>;
+
+pub struct Data {
+    pub generator: Box<dyn Generator>,
+    pub paths: Paths,
+    pub settings: Settings,
+}
+
+impl Data {
+    pub fn new(parent_logger: slog::Logger) -> Result<Self> {
+        let logger = parent_logger.new(o!());
+        let method_logger = logger.new(o!("Method" => "Data::new"));
+        let generator = DefaultGenerator::default();
+        let paths = Paths::new().context(PathInitialization)?;
+        debug!(method_logger, "{:?}", paths);
+        let settings = if paths.settings_file().exists() {
+            Settings::load(paths.settings_file()).context(SettingsLoad)?
+        } else {
+            Settings::default()
+        };
+        debug!(method_logger, "{:?}", settings);
+
+        Ok(Self {
+            generator: Box::new(generator),
+            paths,
+            settings,
+        })
+    }
+}

@@ -18,7 +18,7 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::data::settings::Settings;
+use crate::data::Data;
 use crate::game::game_state::main_menu::MainMenu;
 use crate::game::game_state::{GameState, GameStateChange};
 use crate::ui::Position;
@@ -31,7 +31,7 @@ use tcod::{colors, input, Console};
 
 pub mod game_state;
 
-#[derive(Debug, Snafu, Eq, PartialEq)]
+#[derive(Debug, Snafu)]
 pub enum Error {
     GameStateError { source: game_state::GameStateError },
     EndGame,
@@ -44,6 +44,7 @@ pub struct Game {
     game_states: Vec<Box<dyn GameState>>,
     logger: slog::Logger,
     config: Config,
+    data: Data,
     previous_mouse: Mouse,
 }
 
@@ -51,14 +52,17 @@ impl Game {
     pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     pub const NAME: &'static str = "Goblin Camp Revival";
 
-    pub fn new(parent_logger: slog::Logger, config: Config, settings: Settings) -> Self {
+    pub fn new(parent_logger: slog::Logger, config: Config, data: Data) -> Self {
         let logger = parent_logger.new(o!());
         let method_logger = logger.new(o!("Method" => "Game::new"));
 
-        let size = if settings.fullscreen {
+        let size = if data.settings.fullscreen {
             tcod::system::get_current_resolution()
         } else {
-            (settings.resolution_x as i32, settings.resolution_y as i32)
+            (
+                data.settings.resolution_x as i32,
+                data.settings.resolution_y as i32,
+            )
         };
 
         let char_size = tcod::system::get_char_size();
@@ -76,9 +80,9 @@ impl Game {
 
         let root = Root::initializer()
             .size(size.0 / char_size.0, size.1 / char_size.1)
-            .fullscreen(settings.fullscreen)
+            .fullscreen(data.settings.fullscreen)
             .title(Game::NAME)
-            .renderer(settings.renderer.into())
+            .renderer(data.settings.renderer.into())
             .init();
         tcod::input::show_cursor(true);
 
@@ -87,6 +91,7 @@ impl Game {
             game_states: vec![MainMenu::game_state()],
             logger,
             config,
+            data,
             previous_mouse: Mouse::default(),
         }
     }
@@ -112,6 +117,7 @@ impl Game {
                 root: &mut self.root,
                 config: &self.config,
                 logger: &self.logger,
+                data: &mut self.data,
                 is_running: false,
                 game_state_level: current_game_state_length,
                 input,
@@ -185,7 +191,7 @@ impl Game {
             }
             game_ref.root.flush();
 
-            let deactivate = if let GameStateChange::NoOp = &game_state_change {
+            let deactivate = if let GameStateChange::None = &game_state_change {
                 false
             } else {
                 true
@@ -229,8 +235,8 @@ impl Game {
                     trace!(method_logger, "Game state change: EndGame");
                     self.game_states.clear()
                 }
-                GameStateChange::NoOp => {
-                    trace!(method_logger, "Game state change: NoOp");
+                GameStateChange::None => {
+                    trace!(method_logger, "Game state change: None");
                 }
             }
         }
@@ -252,6 +258,11 @@ impl Game {
                 if let input::Event::Mouse(mouse) = event {
                     mouse_event = Some(mouse.into());
                     self.previous_mouse = mouse;
+
+                    // We have to do this, otherwise multiple click events will trigger
+                    self.previous_mouse.lbutton_pressed = false;
+                    self.previous_mouse.rbutton_pressed = false;
+                    self.previous_mouse.mbutton_pressed = false;
                 }
             }
         }
@@ -299,6 +310,7 @@ pub struct GameRef<'g> {
     pub root: &'g mut Root,
     pub config: &'g Config,
     pub logger: &'g slog::Logger,
+    pub data: &'g mut Data,
     pub is_running: bool,
     pub game_state_level: usize,
     pub input: Input,

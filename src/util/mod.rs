@@ -20,3 +20,14 @@
 mod safe_console;
 
 pub use safe_console::*;
+use std::mem;
+
+pub trait Flip {
+    fn flip(&mut self);
+}
+
+impl Flip for bool {
+    fn flip(&mut self) {
+        mem::replace(self, !*self);
+    }
+}

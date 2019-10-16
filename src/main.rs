@@ -19,12 +19,10 @@
 */
 
 use clap::{load_yaml, App};
-use goblin_camp_revival::data::paths::{PathProvider, Paths};
-use goblin_camp_revival::data::random::DefaultGenerator;
-use goblin_camp_revival::data::settings::Settings;
+use goblin_camp_revival::data::Data;
 use goblin_camp_revival::game::Game;
 use goblin_camp_revival::Config;
-use slog::{debug, info, o, Drain};
+use slog::{info, o, Drain};
 use snafu::{ResultExt, Snafu};
 use std::process;
 
@@ -47,20 +45,12 @@ fn run() -> Result<(), InitializationError> {
     info!(root_logger, "Starting {} {}", Game::NAME, Game::VERSION);
 
     // Create all "singleton" types
-    let _generator = DefaultGenerator::default();
-    let paths = Paths::new().context(PathInitialization)?;
-    debug!(root_logger, "{:?}", paths);
-    let settings = if paths.settings_file().exists() {
-        Settings::load(paths.settings_file()).context(SettingsLoad)?
-    } else {
-        Settings::default()
-    };
-    debug!(root_logger, "{:?}", settings);
+    let data = Data::new(root_logger.clone()).context(DataInitialization)?;
 
     // - Show loading screen while doing heavy I/O?
 
     // Show main menu, unless boottest, else shut down
-    let mut game = Game::new(root_logger.clone(), config, settings);
+    let mut game = Game::new(root_logger.clone(), config, data);
     game.run().context(GameRun)?;
 
     info!(root_logger, "Ending {} {}", Game::NAME, Game::VERSION);
@@ -73,8 +63,7 @@ fn main() {
         let exit_code: i32 = i32::from(&err);
         let source = match err {
             InitializationError::ArgumentParsing { source } => source,
-            InitializationError::PathInitialization { source } => Box::from(source),
-            InitializationError::SettingsLoad { source } => Box::from(source),
+            InitializationError::DataInitialization { source } => Box::from(source),
             InitializationError::GameRun { source } => Box::from(source),
         };
         eprintln!("Error occurred while {}: {}", cause, source);
@@ -89,25 +78,22 @@ pub enum InitializationError {
         #[snafu(source(from(String, Box::from)))]
         source: Box<dyn std::error::Error>,
     },
-    #[snafu(display("initializing paths"))]
-    PathInitialization {
-        source: goblin_camp_revival::data::paths::Error,
-    },
-    #[snafu(display("loading settings"))]
-    SettingsLoad {
-        source: goblin_camp_revival::data::settings::Error,
+    #[snafu(display("initializing data"))]
+    DataInitialization {
+        source: goblin_camp_revival::data::DataError,
     },
     #[snafu(display("running the game"))]
-    GameRun { source: goblin_camp_revival::game::Error },
+    GameRun {
+        source: goblin_camp_revival::game::Error,
+    },
 }
 
 impl From<&InitializationError> for i32 {
     fn from(initialization_error: &InitializationError) -> Self {
         match initialization_error {
             InitializationError::ArgumentParsing { .. } => 1,
-            InitializationError::PathInitialization { .. } => 2,
-            InitializationError::SettingsLoad { .. } => 3,
-            InitializationError::GameRun { .. } => 4,
+            InitializationError::DataInitialization { .. } => 2,
+            InitializationError::GameRun { .. } => 3,
         }
     }
 }

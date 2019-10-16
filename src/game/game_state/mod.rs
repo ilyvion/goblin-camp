@@ -18,13 +18,10 @@
 */
 
 use crate::game::GameRef;
-use snafu::Snafu;
 use std::borrow::Cow;
 use std::fmt::{Display, Formatter, Result as FormatterResult};
 
-#[derive(Debug, Snafu, Eq, PartialEq)]
-pub enum GameStateError {}
-
+pub type GameStateError = Box<dyn std::error::Error>;
 pub type GameStateResult = std::result::Result<(), GameStateError>;
 pub type GameStateUpdateResult = std::result::Result<GameStateChange, GameStateError>;
 
@@ -33,7 +30,7 @@ pub enum GameStateChange {
     Push(Box<dyn GameState>),
     PopPush(Box<dyn GameState>),
     Pop,
-    NoOp,
+    None,
     EndGame,
 }
 
@@ -84,6 +81,6 @@ impl Display for dyn GameState {
     }
 }
 
-pub mod main_menu;
-
 pub mod game;
+pub mod main_menu;
+pub mod settings_dialog;

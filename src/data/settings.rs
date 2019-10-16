@@ -20,8 +20,8 @@
 
 use serde_derive::{Deserialize, Serialize};
 use snafu::{ResultExt, Snafu};
-use std::fs;
 use std::path::Path;
+use std::{fs, mem};
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -32,11 +32,36 @@ pub enum Error {
 
 pub type Result<T = (), E = Error> = std::result::Result<T, E>;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Renderer {
-    GLSL,
+    GlSl,
     OpenGL,
     SDL,
+}
+
+impl Renderer {
+    pub fn all() -> impl Iterator<Item = Self> {
+        use Renderer::*;
+        [GlSl, OpenGL, SDL].iter().cloned()
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Renderer::GlSl => "GLSL",
+            Renderer::OpenGL => "OpenGL",
+            Renderer::SDL => "SDL",
+        }
+    }
+
+    pub fn from_index(i: usize) -> Option<Self> {
+        use Renderer::*;
+        match i {
+            0 => Some(GlSl),
+            1 => Some(OpenGL),
+            2 => Some(SDL),
+            _ => None,
+        }
+    }
 }
 
 impl Default for Renderer {
@@ -48,14 +73,14 @@ impl Default for Renderer {
 impl From<Renderer> for tcod::Renderer {
     fn from(renderer: Renderer) -> Self {
         match renderer {
-            Renderer::GLSL => tcod::Renderer::GLSL,
+            Renderer::GlSl => tcod::Renderer::GLSL,
             Renderer::OpenGL => tcod::Renderer::OpenGL,
             Renderer::SDL => tcod::Renderer::SDL,
         }
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Settings {
     pub resolution_x: u32,
     pub resolution_y: u32,
@@ -87,6 +112,10 @@ impl Settings {
         fs::write(settings_file_path, settings_string).context(SettingsIoError)?;
 
         Ok(())
+    }
+
+    pub fn restore_from(&mut self, other: Settings) {
+        mem::replace(self, other);
     }
 }
 

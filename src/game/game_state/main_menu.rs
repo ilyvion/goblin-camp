@@ -19,13 +19,14 @@
 */
 
 use crate::game::game_state::game::ConfirmNewGame;
+use crate::game::game_state::settings_dialog::SettingsDialog;
 use crate::game::game_state::GameStateUpdateResult;
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult};
 use crate::game::{Game, GameRef};
 use derivative::Derivative;
 use slog::{debug, o};
 use std::borrow::Cow;
-use tcod::colors::{BLACK, CELADON, GREY, WHITE};
+use tcod::colors;
 use tcod::console::BackgroundFlag::{Default as BackgroundDefault, Set};
 use tcod::console::{Console, Root};
 use tcod::input::Event;
@@ -42,55 +43,55 @@ impl MainMenu {
             label: "New Game",
             shortcut: 'n',
             active: ActiveState::Always,
-            new_state: ConfirmNewGame::game_state,
+            new_state: ConfirmNewGame::game_state_change,
         },
         MainMenuEntry {
             label: "Continue",
             shortcut: 'c',
             active: ActiveState::IfRunning,
-            new_state: MainMenu::quit_game_state,
+            new_state: MainMenu::quit_game_state_change,
         },
         MainMenuEntry {
             label: "Load",
             shortcut: 'l',
             active: ActiveState::HasSaves,
-            new_state: MainMenu::quit_game_state,
+            new_state: MainMenu::quit_game_state_change,
         },
         MainMenuEntry {
             label: "Save",
             shortcut: 's',
             active: ActiveState::IfRunning,
-            new_state: MainMenu::quit_game_state,
+            new_state: MainMenu::quit_game_state_change,
         },
         MainMenuEntry {
             label: "Settings",
             shortcut: 'o',
-            active: ActiveState::Never,
-            new_state: MainMenu::quit_game_state,
+            active: ActiveState::Always,
+            new_state: SettingsDialog::game_state_change,
         },
         MainMenuEntry {
             label: "Keys",
             shortcut: 'k',
             active: ActiveState::Never,
-            new_state: MainMenu::quit_game_state,
+            new_state: MainMenu::quit_game_state_change,
         },
         MainMenuEntry {
             label: "Mods",
             shortcut: 'm',
             active: ActiveState::Never,
-            new_state: MainMenu::quit_game_state,
+            new_state: MainMenu::quit_game_state_change,
         },
         MainMenuEntry {
             label: "Tile sets",
             shortcut: 't',
             active: ActiveState::Never,
-            new_state: MainMenu::quit_game_state,
+            new_state: MainMenu::quit_game_state_change,
         },
         MainMenuEntry {
             label: "Exit",
             shortcut: 'q',
             active: ActiveState::Always,
-            new_state: MainMenu::quit_game_state,
+            new_state: MainMenu::quit_game_state_change,
         },
     ];
 
@@ -103,7 +104,7 @@ impl MainMenu {
         })
     }
 
-    fn quit_game_state() -> GameStateChange {
+    fn quit_game_state_change() -> GameStateChange {
         GameStateChange::EndGame
     }
 
@@ -124,8 +125,8 @@ impl MainMenu {
     }
 
     fn render_menu(root: &mut Root, render_data: RenderData) {
-        root.set_default_foreground(WHITE);
-        root.set_default_background(BLACK);
+        root.set_default_foreground(colors::WHITE);
+        root.set_default_background(colors::BLACK);
 
         root.print_frame(
             render_data.edge_x,
@@ -139,7 +140,7 @@ impl MainMenu {
         root.set_alignment(TextAlignment::Center);
         root.set_background_flag(Set);
 
-        root.set_default_foreground(CELADON);
+        root.set_default_foreground(colors::CELADON);
         root.print(
             render_data.edge_x + Self::WIDTH / 2,
             render_data.edge_y - 3,
@@ -148,22 +149,22 @@ impl MainMenu {
     }
 
     fn render_menu_entries(game_ref: &mut GameRef, render_data: RenderData) {
-        game_ref.root.set_default_foreground(WHITE);
+        game_ref.root.set_default_foreground(colors::WHITE);
 
         for (i, entry) in MainMenu::ENTRIES.iter().enumerate() {
             if render_data
                 .selected
                 .map_or(false, |selected_entry| selected_entry == entry)
             {
-                game_ref.root.set_default_foreground(BLACK);
-                game_ref.root.set_default_background(WHITE);
+                game_ref.root.set_default_foreground(colors::BLACK);
+                game_ref.root.set_default_background(colors::WHITE);
             } else {
-                game_ref.root.set_default_foreground(WHITE);
-                game_ref.root.set_default_background(BLACK);
+                game_ref.root.set_default_foreground(colors::WHITE);
+                game_ref.root.set_default_background(colors::BLACK);
             }
 
             if !entry.is_active(game_ref) {
-                game_ref.root.set_default_foreground(GREY);
+                game_ref.root.set_default_foreground(colors::GREY);
             }
 
             game_ref.root.print(
@@ -287,7 +288,7 @@ impl GameState for MainMenu {
         if game_ref.root.window_closed() {
             Ok(GameStateChange::EndGame)
         } else {
-            Ok(GameStateChange::NoOp)
+            Ok(GameStateChange::None)
         }
     }
 

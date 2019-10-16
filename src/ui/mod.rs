@@ -19,7 +19,7 @@
 */
 
 use crate::util::SafeConsole;
-use std::ops::Add;
+use std::ops::{Add, Sub};
 
 mod button;
 mod dialog;
@@ -64,6 +64,17 @@ impl Add for Position {
         Self {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
+        }
+    }
+}
+
+impl Sub for Position {
+    type Output = Position;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
         }
     }
 }
@@ -120,7 +131,7 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    fn contains_position(&self, position: Position) -> bool {
+    pub fn contains_position(&self, position: Position) -> bool {
         position.x >= self.position.x
             && position.x < self.position.x + self.size.width
             && position.y >= self.position.y

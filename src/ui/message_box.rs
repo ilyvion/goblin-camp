@@ -145,22 +145,22 @@ impl GameState for MessageBox {
             println!("BUTTON: {}", button);
             if button.as_str() == self.first_button_text {
                 let result = (self.first_result.take().unwrap())();
-                if let GameStateChange::NoOp = &result {
-                    panic!("MessageBox first_result returned NoOp, which is not permitted!");
+                if let GameStateChange::None = &result {
+                    panic!("MessageBox first_result returned None, which is not permitted!");
                 }
                 return Ok(result);
             } else if let Some(second_button_text) = &self.second_button_text {
                 if button.as_str() == second_button_text {
                     let result = (self.second_result.take().unwrap())();
-                    if let GameStateChange::NoOp = &result {
-                        panic!("MessageBox second_result returned NoOp, which is not permitted!");
+                    if let GameStateChange::None = &result {
+                        panic!("MessageBox second_result returned None, which is not permitted!");
                     }
                     return Ok(result);
                 }
             }
         }
 
-        Ok(GameStateChange::NoOp)
+        Ok(GameStateChange::None)
     }
 
     fn draw(&mut self, game_ref: &mut GameRef) -> GameStateResult {
