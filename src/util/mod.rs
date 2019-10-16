@@ -1,5 +1,4 @@
 /*
-    Copyright 2010-2011 Ilkka Halila
     Copyright 2019 Alexander Krivács Schrøder
 
     This file is part of Goblin Camp.
@@ -18,8 +17,6 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#[allow(clippy::module_inception)]
-pub mod data;
-pub mod paths;
-pub mod random;
-pub mod settings;
+mod safe_console;
+
+pub use safe_console::*;

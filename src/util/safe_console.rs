@@ -20,7 +20,7 @@
 use crate::ui::{Position, Size};
 use tcod::{BackgroundFlag, Color, Console, TextAlignment};
 
-/// Re-implements the `Console` trait from `tcod`, but makes every method object-safe so it can be
+/// Re-implements the `Console` trait from `tcod`, but makes every method object-safe so they can be
 /// used as a `dyn` trait.
 pub trait SafeConsole {
     /// Returns the default text alignment for the `Console` instance. For all the possible

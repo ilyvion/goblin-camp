@@ -18,6 +18,7 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::data::settings::Settings;
 use crate::game::game_state::main_menu::MainMenu;
 use crate::game::game_state::{GameState, GameStateChange};
 use crate::ui::Position;
@@ -50,29 +51,36 @@ impl Game {
     pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     pub const NAME: &'static str = "Goblin Camp";
 
-    pub fn new(parent_logger: slog::Logger, config: Config) -> Self {
+    pub fn new(parent_logger: slog::Logger, config: Config, settings: Settings) -> Self {
         let logger = parent_logger.new(o!());
         let method_logger = logger.new(o!("Method" => "Game::new"));
+
+        let size = if settings.fullscreen {
+            tcod::system::get_current_resolution()
+        } else {
+            (settings.resolution_x as i32, settings.resolution_y as i32)
+        };
 
         let char_size = tcod::system::get_char_size();
         debug!(
             method_logger,
             "Character size: ({}, {})", char_size.0, char_size.1
         );
+        debug!(method_logger, "Window size: ({}, {})", size.0, size.1);
         debug!(
             method_logger,
-            "Window size: ({}, {})",
-            config.window_width as i32 / char_size.0,
-            config.window_height as i32 / char_size.1
+            "Window characters: ({}, {})",
+            size.0 / char_size.0,
+            size.1 / char_size.1
         );
 
         let root = Root::initializer()
-            .size(
-                config.window_width as i32 / char_size.0,
-                config.window_height as i32 / char_size.1,
-            )
+            .size(size.0 / char_size.0, size.1 / char_size.1)
+            .fullscreen(settings.fullscreen)
             .title(Game::NAME)
+            .renderer(settings.renderer.into())
             .init();
+        tcod::input::show_cursor(true);
 
         Self {
             root,

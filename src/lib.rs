@@ -18,14 +18,10 @@
     along with Goblin Camp.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-pub mod data;
-
 pub mod coordinate;
-
+pub mod data;
 pub mod game;
-
 pub mod ui;
-
 pub mod util;
 
 use clap::ArgMatches;
@@ -36,9 +32,6 @@ pub struct Config {
     dev_mode: bool,
     no_dumps: bool,
     verbosity: u64,
-
-    window_width: u32,
-    window_height: u32,
 }
 
 impl Config {
@@ -48,10 +41,6 @@ impl Config {
             dev_mode: arg_matches.is_present("dev_mode"),
             no_dumps: arg_matches.is_present("no_dumps"),
             verbosity: arg_matches.occurrences_of("verbose"),
-
-            // TODO: Read from a settings file
-            window_width: 800,
-            window_height: 600,
         })
     }
 
