@@ -19,22 +19,25 @@
 */
 
 use crate::game::Game;
-use directories::{BaseDirs, UserDirs};
+use directories::ProjectDirs;
 use snafu::{ResultExt, Snafu};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Snafu)]
 pub enum Error {
-    PathIoError { source: std::io::Error },
+    #[snafu(display("Errors settings up {:?} because: {}", path, source))]
+    PathIoError {
+        source: std::io::Error,
+        path: Option<PathBuf>,
+    },
     PathParentError,
     PathDirsError,
 }
 
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type Result<T = (), E = Error> = std::result::Result<T, E>;
 
 pub trait PathProvider {
-    fn personal_directory(&self) -> &Path;
     fn executable_file(&self) -> &Path;
     fn executable_directory(&self) -> &Path;
     fn saves_directory(&self) -> &Path;
@@ -48,7 +51,6 @@ pub trait PathProvider {
 
 #[derive(Debug)]
 pub struct Paths {
-    personal_directory: PathBuf,
     executable_file: PathBuf,
     executable_directory: PathBuf,
     saves_directory: PathBuf,
@@ -62,46 +64,49 @@ pub struct Paths {
 
 impl Paths {
     pub fn new() -> Result<Self> {
-        let executable_file = std::env::current_exe().context(PathIoError)?;
+        let executable_file = std::env::current_exe().context(PathIoError { path: None })?;
         let executable_directory = executable_file
             .parent()
             .ok_or(Error::PathParentError)?
             .to_path_buf();
 
-        let base_dirs = BaseDirs::new().ok_or(Error::PathDirsError)?;
-        let personal_directory = if cfg!(windows) {
-            let user_dirs = UserDirs::new().ok_or(Error::PathDirsError)?;
+        let project_dirs = ProjectDirs::from("", "", Game::NAME).ok_or(Error::PathDirsError)?;
+        let data_dir = project_dirs.data_dir();
+        let config_dir = project_dirs.config_dir();
 
-            // TODO: Do this properly? Is there some way to get the "My Games" path in such a way as to be culture independent?
-            user_dirs
-                .document_dir()
-                .ok_or(Error::PathDirsError)?
-                .to_path_buf()
-                .join("My Games")
-        } else {
-            base_dirs.home_dir().to_path_buf()
-        }
-        .join(Game::NAME);
+        let saves_directory = data_dir.join("saves");
+        let screenshots_directory = data_dir.join("screenshots");
+        let mods_directory = data_dir.join("mods");
+        let user_tile_sets_directory = data_dir.join("tilesets");
 
-        let saves_directory = personal_directory.join("saves");
-        let screenshots_directory = personal_directory.join("screenshots");
-        let mods_directory = personal_directory.join("mods");
-        let user_tile_sets_directory = personal_directory.join("tilesets");
+        fs::create_dir_all(data_dir).with_context(|| PathIoError {
+            path: Some(data_dir.to_path_buf()),
+        })?;
+        fs::create_dir_all(config_dir).with_context(|| PathIoError {
+            path: Some(config_dir.to_path_buf()),
+        })?;
 
-        fs::create_dir_all(&saves_directory).context(PathIoError)?;
-        fs::create_dir_all(&screenshots_directory).context(PathIoError)?;
-        fs::create_dir_all(&mods_directory).context(PathIoError)?;
-        fs::create_dir_all(&user_tile_sets_directory).context(PathIoError)?;
+        fs::create_dir_all(&saves_directory).with_context(|| PathIoError {
+            path: Some(saves_directory.clone()),
+        })?;
+        fs::create_dir_all(&screenshots_directory).with_context(|| PathIoError {
+            path: Some(screenshots_directory.clone()),
+        })?;
+        fs::create_dir_all(&mods_directory).with_context(|| PathIoError {
+            path: Some(mods_directory.clone()),
+        })?;
+        fs::create_dir_all(&user_tile_sets_directory).with_context(|| PathIoError {
+            path: Some(user_tile_sets_directory.clone()),
+        })?;
 
-        let settings_file = personal_directory.join("settings.toml");
-        let font_file = personal_directory.join("terminal.png");
+        let settings_file = config_dir.join("settings.toml");
+        let font_file = data_dir.join("terminal.png");
 
         Ok(Self {
             executable_file: executable_file.clone(),
             executable_directory,
             // TODO: ? data_directory,
             // TODO: ? core_tile_sets_directory,
-            personal_directory,
             saves_directory,
             screenshots_directory,
             mods_directory,
@@ -114,10 +119,6 @@ impl Paths {
 }
 
 impl PathProvider for Paths {
-    fn personal_directory(&self) -> &Path {
-        &self.personal_directory
-    }
-
     fn executable_file(&self) -> &Path {
         &self.executable_file
     }

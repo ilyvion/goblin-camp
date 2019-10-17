@@ -20,14 +20,27 @@
 
 use serde_derive::{Deserialize, Serialize};
 use snafu::{ResultExt, Snafu};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{fs, mem};
 
 #[derive(Debug, Snafu)]
 pub enum Error {
-    SettingsIoError { source: std::io::Error },
-    TomlDeserializationError { source: toml::de::Error },
-    TomlSerializationError { source: toml::ser::Error },
+    #[snafu(display("Cannot save to {:?} because: {}", path, source))]
+    SettingsSave {
+        source: std::io::Error,
+        path: PathBuf,
+    },
+    #[snafu(display("Cannot load from {:?} because: {}", path, source))]
+    SettingsLoad {
+        source: std::io::Error,
+        path: PathBuf,
+    },
+    TomlDeserializationError {
+        source: toml::de::Error,
+    },
+    TomlSerializationError {
+        source: toml::ser::Error,
+    },
 }
 
 pub type Result<T = (), E = Error> = std::result::Result<T, E>;
@@ -100,7 +113,11 @@ pub struct Settings {
 
 impl Settings {
     pub fn load<P: AsRef<Path>>(settings_file_path: P) -> Result<Self> {
-        let settings_string = fs::read_to_string(settings_file_path).context(SettingsIoError)?;
+        let settings_file_path = settings_file_path.as_ref();
+        let settings_string =
+            fs::read_to_string(settings_file_path).with_context(|| SettingsLoad {
+                path: settings_file_path.to_path_buf(),
+            })?;
         let settings: Settings =
             toml::from_str(&settings_string).context(TomlDeserializationError)?;
 
@@ -108,8 +125,11 @@ impl Settings {
     }
 
     pub fn save<P: AsRef<Path>>(&self, settings_file_path: P) -> Result {
+        let settings_file_path = settings_file_path.as_ref();
         let settings_string = toml::to_string_pretty(&self).context(TomlSerializationError)?;
-        fs::write(settings_file_path, settings_string).context(SettingsIoError)?;
+        fs::write(settings_file_path, settings_string).with_context(|| SettingsSave {
+            path: settings_file_path.to_path_buf(),
+        })?;
 
         Ok(())
     }
