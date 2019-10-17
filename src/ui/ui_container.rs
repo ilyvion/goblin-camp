@@ -18,10 +18,14 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::drawable_prerequisites_impl;
 use crate::game::Input;
-use crate::ui::{Drawable, HitResult, MenuResult, Position, Size};
+use crate::ui::drawable::Drawable;
+use crate::ui::menu_result::{HitResult, MenuResult};
+use crate::ui::originals::{HoldingOriginals, IndexedOriginal};
+use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
+use crate::{drawable_prerequisites_impl, indexed_original_impl};
+use tcod::colors;
 
 pub struct UiContainer {
     position: Position,
@@ -31,7 +35,7 @@ pub struct UiContainer {
 }
 
 impl UiContainer {
-    pub fn new<I: Iterator<Item = Box<dyn Drawable>>>(
+    pub fn new_with_components<I: Iterator<Item = Box<dyn Drawable>>>(
         components: I,
         position: Position,
         size: Size,
@@ -44,8 +48,14 @@ impl UiContainer {
         }
     }
 
-    pub fn add_component(&mut self, component: Box<dyn Drawable>) {
-        self.components.push(component)
+    pub fn new(position: Position, size: Size) -> Self {
+        Self::new_with_components(std::iter::empty(), position, size)
+    }
+
+    pub fn add_component<C: Drawable + 'static>(&mut self, component: C) -> IndexedOriginal<C> {
+        self.components.push(Box::new(component));
+        let components_len = self.components.len();
+        IndexedOriginal::new(components_len - 1)
     }
 }
 
@@ -56,6 +66,7 @@ impl Drawable for UiContainer {
         for component in &self.components {
             if component.visible() {
                 component.draw(relative_position + self.position, console);
+                console.set_default_background(colors::BLACK);
             }
         }
     }
@@ -78,3 +89,11 @@ impl Drawable for UiContainer {
         }
     }
 }
+
+impl HoldingOriginals<usize> for UiContainer {
+    fn get_component(&mut self, token: &usize) -> &mut dyn Drawable {
+        unsafe { self.components.get_unchecked_mut(*token) }.as_mut()
+    }
+}
+
+indexed_original_impl!(UiContainer, ui_container);

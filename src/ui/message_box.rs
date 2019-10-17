@@ -21,9 +21,11 @@
 use super::{Position, Size, UiContainer};
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult, GameStateUpdateResult};
 use crate::game::GameRef;
-use crate::ui::{Button, Dialog, Drawable, Label};
+use crate::ui::drawable::Drawable;
+use crate::ui::{Button, Dialog, Label};
 use crate::util::ConsoleWrapper;
 use std::borrow::Cow;
+use tcod::TextAlignment;
 
 pub enum MessageBoxResult {
     First,
@@ -71,16 +73,17 @@ impl MessageBox {
         let text = text.as_ref();
         let size = Size::new(54, (text.len() / Self::MAX_TEXT_LINE_LENGTH + 8) as i32);
 
-        let mut contents = UiContainer::new(std::iter::empty(), Position::ORIGIN, size);
+        let mut contents = UiContainer::new(Position::ORIGIN, size);
 
         // Divide the text into separate lines (might panic if not ASCII)
         let mut i = 0;
         loop {
             let j = (i + Self::MAX_TEXT_LINE_LENGTH).min(text.len());
-            contents.add_component(Box::new(Label::new(
+            contents.add_component(Label::new_with_alignment(
                 &text[i..j],
                 Position::new(27, (2 + (i / Self::MAX_TEXT_LINE_LENGTH)) as i32),
-            )));
+                TextAlignment::Center,
+            ));
 
             i += Self::MAX_TEXT_LINE_LENGTH;
             if i > text.len() {
@@ -93,31 +96,31 @@ impl MessageBox {
         let second_button_text = second_button_text.map(|s| s.as_ref().to_string());
         match &second_button_text {
             None => {
-                contents.add_component(Box::new(Button::new(
+                contents.add_component(Button::new(
                     first_button_text.clone(),
                     Position::new(22, (i / Self::MAX_TEXT_LINE_LENGTH + 3) as i32),
                     MessageBox::BUTTON_WIDTH,
                     first_button_shortcut,
                     true,
-                )));
+                ));
             }
             Some(second_button_text) => {
-                contents.add_component(Box::new(Button::new(
+                contents.add_component(Button::new(
                     first_button_text.clone(),
                     Position::new(8, (i / Self::MAX_TEXT_LINE_LENGTH + 3) as i32),
                     MessageBox::BUTTON_WIDTH,
                     first_button_shortcut,
                     true,
-                )));
+                ));
 
                 let shortcut = second_button_text.to_lowercase().chars().next();
-                contents.add_component(Box::new(Button::new(
+                contents.add_component(Button::new(
                     second_button_text.clone(),
                     Position::new(31, (i / Self::MAX_TEXT_LINE_LENGTH + 3) as i32),
                     MessageBox::BUTTON_WIDTH,
                     shortcut,
                     true,
-                )));
+                ));
             }
         }
 

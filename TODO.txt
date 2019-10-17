@@ -1,1 +1,2 @@
 * Replace custom menu rendering code and settings dialog rendering code with UI components
+* Extract UI components out into separate crate.

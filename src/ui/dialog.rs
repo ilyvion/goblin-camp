@@ -18,10 +18,12 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::drawable_prerequisites_impl;
 use crate::game::{GameRef, Input};
-use crate::ui::{Drawable, MenuResult, Position, Positioned, Size, Sized};
+use crate::ui::drawable::{Drawable, Positioned, Sized};
+use crate::ui::menu_result::MenuResult;
+use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
+use crate::{drawable_prerequisites_impl, indexed_original_impl};
 use tcod::{BackgroundFlag, Console};
 
 pub struct Dialog<D: Drawable> {
@@ -47,6 +49,10 @@ impl<D: Drawable> Dialog<D> {
             contents,
         }
     }
+
+    pub fn get_contents(&mut self) -> &mut D {
+        &mut self.contents
+    }
 }
 
 drawable_prerequisites_impl!(Dialog<D: Drawable>);
@@ -67,3 +73,5 @@ impl<D: Drawable> Drawable for Dialog<D> {
         self.contents.update(self.position(), input)
     }
 }
+
+indexed_original_impl!(Dialog<D: Drawable>, dialog);

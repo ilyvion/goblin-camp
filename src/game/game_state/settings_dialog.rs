@@ -54,7 +54,7 @@ impl SettingsDialog {
     const EMPTY_CHECKBOX: &'static str = "à";
     const CHECKED_CHECKBOX: &'static str = "á";
 
-    pub fn game_state_change() -> GameStateChange {
+    pub fn game_state_change(_: &mut GameRef) -> GameStateChange {
         GameStateChange::Push(Self::game_state())
     }
 
@@ -142,7 +142,6 @@ impl GameState for SettingsDialog {
             }
             if field_updated {
                 if let Ok(value) = field_value.parse() {
-                    println!("FIELD VALID! {}", field_value);
                     *field_invalid = false;
                     if value == 0 {
                         game_ref.data.settings.resolution_x = value;
@@ -150,7 +149,6 @@ impl GameState for SettingsDialog {
                         game_ref.data.settings.resolution_y = value;
                     }
                 } else {
-                    println!("FIELD INVALID! {}", field_value);
                     *field_invalid = true;
                 }
             }

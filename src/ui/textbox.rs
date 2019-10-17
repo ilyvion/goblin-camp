@@ -22,52 +22,63 @@ use crate::ui::drawable::Drawable;
 use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
 use crate::{drawable_prerequisites_impl, indexed_original_impl};
-use tcod::{colors, TextAlignment};
+use tcod::{colors, BackgroundFlag};
 
-pub struct Label {
+/// WIP
+pub struct TextBox {
     position: Position,
     size: Size,
     visibility_fn: Option<Box<dyn Fn() -> bool>>,
 
     text: String,
-    alignment: TextAlignment,
     color: colors::Color,
+    background_color: colors::Color,
 }
 
-impl Label {
-    pub fn new<S: AsRef<str>>(text: S, position: Position) -> Self {
-        Self::new_with_alignment(text, position, TextAlignment::Left)
+impl TextBox {
+    pub fn new<S: AsRef<str>>(text: S, position: Position, width: i32) -> Self {
+        Self::new_with_alignment(text, position, width)
     }
 
-    pub fn new_with_alignment<S: AsRef<str>>(
-        text: S,
-        position: Position,
-        alignment: TextAlignment,
-    ) -> Self {
+    pub fn new_with_alignment<S: AsRef<str>>(text: S, position: Position, width: i32) -> Self {
         Self {
             position,
-            size: Size::new(0, 1),
+            size: Size::new(width, 1),
             visibility_fn: None,
 
             text: text.as_ref().to_string(),
-            alignment,
             color: colors::WHITE,
+            background_color: colors::DARK_GREY,
         }
     }
 
     pub fn set_color(&mut self, color: colors::Color) {
         self.color = color;
     }
+
+    pub fn set_background_color(&mut self, color: colors::Color) {
+        self.background_color = color;
+    }
+
+    pub fn set_text<S: AsRef<str>>(&mut self, text: S) {
+        self.text = text.as_ref().to_string();
+    }
 }
 
-drawable_prerequisites_impl!(Label);
+drawable_prerequisites_impl!(TextBox);
 
-impl Drawable for Label {
+impl Drawable for TextBox {
     fn draw(&self, relative_position: Position, console: &mut dyn SafeConsole) {
-        console.set_alignment(self.alignment);
+        console.set_default_background(self.background_color);
         console.set_default_foreground(self.color);
+        console.rect(
+            relative_position + self.position,
+            self.size,
+            true,
+            BackgroundFlag::Default,
+        );
         console.print(relative_position + self.position, &self.text);
     }
 }
 
-indexed_original_impl!(Label, label);
+indexed_original_impl!(TextBox, text_box);

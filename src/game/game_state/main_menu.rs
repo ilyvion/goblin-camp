@@ -104,7 +104,7 @@ impl MainMenu {
         })
     }
 
-    fn quit_game_state_change() -> GameStateChange {
+    fn quit_game_state_change(_: &mut GameRef) -> GameStateChange {
         GameStateChange::EndGame
     }
 
@@ -154,7 +154,7 @@ impl MainMenu {
         for (i, entry) in MainMenu::ENTRIES.iter().enumerate() {
             if render_data
                 .selected
-                .map_or(false, |selected_entry| selected_entry == entry)
+                .map_or(false, |selected_entry| selected_entry.label == entry.label)
             {
                 game_ref.root.set_default_foreground(colors::BLACK);
                 game_ref.root.set_default_background(colors::WHITE);
@@ -190,7 +190,7 @@ impl MainMenu {
                     for entry in MainMenu::ENTRIES.iter() {
                         if key.printable == entry.shortcut && entry.is_active(game_ref) {
                             debug!(method_logger, "Entry chosen by key"; "entry" => entry.label, "key" => key.printable);
-                            return Some(Ok((entry.new_state)()));
+                            return Some(Ok((entry.new_state)(game_ref)));
                         }
                     }
                 }
@@ -217,7 +217,7 @@ impl MainMenu {
                             if selected.is_active(game_ref) {
                                 let mouse_coordinates = format!("({}, {})", mouse.cx, mouse.cy);
                                 debug!(method_logger, "Entry chosen by mouse"; "entry" => selected.label, "position" => mouse_coordinates);
-                                return Some(Ok((selected.new_state)()));
+                                return Some(Ok((selected.new_state)(game_ref)));
                             }
                         }
                     }
@@ -329,12 +329,11 @@ enum ActiveState {
     Never,
 }
 
-#[derive(Debug, Eq, PartialEq)]
 struct MainMenuEntry {
     label: &'static str,
     shortcut: char,
     active: ActiveState,
-    new_state: fn() -> GameStateChange,
+    new_state: fn(&mut GameRef) -> GameStateChange,
 }
 
 impl MainMenuEntry {

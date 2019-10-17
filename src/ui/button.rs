@@ -18,10 +18,12 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::drawable_prerequisites_impl;
 use crate::game::Input;
-use crate::ui::{Drawable, HitResult, MenuResult, Position, RespondKind, Size};
+use crate::ui::drawable::Drawable;
+use crate::ui::menu_result::{HitResult, MenuResult, RespondKind};
+use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
+use crate::{drawable_prerequisites_impl, indexed_original_impl};
 use std::any::Any;
 use tcod::{colors, BackgroundFlag, TextAlignment};
 
@@ -122,3 +124,5 @@ impl Drawable for Button {
         }
     }
 }
+
+indexed_original_impl!(Button, button);

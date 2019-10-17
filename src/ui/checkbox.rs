@@ -22,52 +22,64 @@ use crate::ui::drawable::Drawable;
 use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
 use crate::{drawable_prerequisites_impl, indexed_original_impl};
-use tcod::{colors, TextAlignment};
+use tcod::colors;
 
-pub struct Label {
+/// WIP
+pub struct CheckBox {
     position: Position,
     size: Size,
     visibility_fn: Option<Box<dyn Fn() -> bool>>,
 
+    checked: bool,
     text: String,
-    alignment: TextAlignment,
     color: colors::Color,
+    checked_color: colors::Color,
 }
 
-impl Label {
-    pub fn new<S: AsRef<str>>(text: S, position: Position) -> Self {
-        Self::new_with_alignment(text, position, TextAlignment::Left)
-    }
+impl CheckBox {
+    const EMPTY_CHECKBOX: &'static str = "à";
+    const CHECKED_CHECKBOX: &'static str = "á";
 
-    pub fn new_with_alignment<S: AsRef<str>>(
+    pub fn new<S: AsRef<str>>(
         text: S,
         position: Position,
-        alignment: TextAlignment,
+        checked: bool,
+        color: colors::Color,
+        checked_color: colors::Color,
     ) -> Self {
         Self {
             position,
             size: Size::new(0, 1),
             visibility_fn: None,
 
+            checked,
             text: text.as_ref().to_string(),
-            alignment,
-            color: colors::WHITE,
+            color,
+            checked_color,
         }
     }
-
-    pub fn set_color(&mut self, color: colors::Color) {
-        self.color = color;
-    }
 }
 
-drawable_prerequisites_impl!(Label);
+drawable_prerequisites_impl!(CheckBox);
 
-impl Drawable for Label {
+impl Drawable for CheckBox {
     fn draw(&self, relative_position: Position, console: &mut dyn SafeConsole) {
-        console.set_alignment(self.alignment);
-        console.set_default_foreground(self.color);
-        console.print(relative_position + self.position, &self.text);
+        console.set_default_foreground(if self.checked {
+            self.checked_color
+        } else {
+            self.color
+        });
+
+        console.print(
+            relative_position + self.position,
+            if !self.checked {
+                Self::EMPTY_CHECKBOX
+            } else {
+                Self::CHECKED_CHECKBOX
+            },
+        );
+        console.print(relative_position + self.position + (2, 0), &self.text);
     }
 }
 
-indexed_original_impl!(Label, label);
+indexed_original_impl!(CheckBox, checkbox);
