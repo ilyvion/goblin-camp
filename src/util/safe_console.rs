@@ -17,7 +17,7 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::ui::{Position, Size};
+use crate::ui::{Position, Rectangle, Size};
 use tcod::{BackgroundFlag, Color, Console, TextAlignment};
 
 // TODO: Replace uses of position, size with rectangle
@@ -119,7 +119,7 @@ pub trait SafeConsole {
     /// Prints the text at the specified location in a rectangular area with
     /// the dimensions: (width; height). If the text is longer than the width the
     /// newlines will be inserted.
-    fn print_rect(&mut self, position: Position, size: Size, text: &str);
+    fn print_rect(&mut self, rectangle: Rectangle, text: &str);
 
     /// Prints the text at the specified location with an explicit
     /// [BackgroundFlag](./enum.BackgroundFlag.html) and
@@ -135,26 +135,19 @@ pub trait SafeConsole {
     /// Combines the functions of `print_ex` and `print_rect`
     fn print_rect_ex(
         &mut self,
-        position: Position,
-        size: Size,
+        rectangle: Rectangle,
         background_flag: BackgroundFlag,
         alignment: TextAlignment,
         text: &str,
     );
 
     /// Compute the height of a wrapped text printed using `print_rect` or `print_rect_ex`.
-    fn get_height_rect(&self, position: Position, size: Size, text: &str) -> i32;
+    fn get_height_rect(&self, rectangle: Rectangle, text: &str) -> i32;
 
     /// Fill a rectangle with the default background colour.
     ///
     /// If `clear` is true, set each cell's character to space (ASCII 32).
-    fn rect(
-        &mut self,
-        position: Position,
-        size: Size,
-        clear: bool,
-        background_flag: BackgroundFlag,
-    );
+    fn rect(&mut self, rectangle: Rectangle, clear: bool, background_flag: BackgroundFlag);
 
     /// Draw a horizontal line.
     ///
@@ -178,8 +171,7 @@ pub trait SafeConsole {
     /// using inverted colours.
     fn print_frame(
         &mut self,
-        position: Position,
-        size: Size,
+        rectangle: Rectangle,
         clear: bool,
         background_flag: BackgroundFlag,
         title: Option<&str>,
@@ -278,8 +270,15 @@ impl<C: Console> SafeConsole for C {
         Console::print(self, position.x, position.y, text)
     }
 
-    fn print_rect(&mut self, position: Position, size: Size, text: &str) {
-        Console::print_rect(self, position.x, position.y, size.width, size.height, text)
+    fn print_rect(&mut self, rectangle: Rectangle, text: &str) {
+        Console::print_rect(
+            self,
+            rectangle.position.x,
+            rectangle.position.y,
+            rectangle.size.width,
+            rectangle.size.height,
+            text,
+        )
     }
 
     fn print_ex(
@@ -301,41 +300,41 @@ impl<C: Console> SafeConsole for C {
 
     fn print_rect_ex(
         &mut self,
-        position: Position,
-        size: Size,
+        rectangle: Rectangle,
         background_flag: BackgroundFlag,
         alignment: TextAlignment,
         text: &str,
     ) {
         Console::print_rect_ex(
             self,
-            position.x,
-            position.y,
-            size.width,
-            size.height,
+            rectangle.position.x,
+            rectangle.position.y,
+            rectangle.size.width,
+            rectangle.size.height,
             background_flag,
             alignment,
             text,
         )
     }
 
-    fn get_height_rect(&self, position: Position, size: Size, text: &str) -> i32 {
-        Console::get_height_rect(self, position.x, position.y, size.width, size.height, text)
+    fn get_height_rect(&self, rectangle: Rectangle, text: &str) -> i32 {
+        Console::get_height_rect(
+            self,
+            rectangle.position.x,
+            rectangle.position.y,
+            rectangle.size.width,
+            rectangle.size.height,
+            text,
+        )
     }
 
-    fn rect(
-        &mut self,
-        position: Position,
-        size: Size,
-        clear: bool,
-        background_flag: BackgroundFlag,
-    ) {
+    fn rect(&mut self, rectangle: Rectangle, clear: bool, background_flag: BackgroundFlag) {
         Console::rect(
             self,
-            position.x,
-            position.y,
-            size.width,
-            size.height,
+            rectangle.position.x,
+            rectangle.position.y,
+            rectangle.size.width,
+            rectangle.size.height,
             clear,
             background_flag,
         )
@@ -356,18 +355,17 @@ impl<C: Console> SafeConsole for C {
 
     fn print_frame(
         &mut self,
-        position: Position,
-        size: Size,
+        rectangle: Rectangle,
         clear: bool,
         background_flag: BackgroundFlag,
         title: Option<&str>,
     ) {
         Console::print_frame(
             self,
-            position.x,
-            position.y,
-            size.width,
-            size.height,
+            rectangle.position.x,
+            rectangle.position.y,
+            rectangle.size.width,
+            rectangle.size.height,
             clear,
             background_flag,
             title,

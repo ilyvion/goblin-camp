@@ -60,8 +60,7 @@ drawable_prerequisites_impl!(Dialog<D: Drawable>);
 impl<D: Drawable> Drawable for Dialog<D> {
     fn draw(&self, _: Position, console: &mut dyn SafeConsole) {
         console.print_frame(
-            self.position(),
-            self.size(),
+            self.position() + self.size(),
             true,
             BackgroundFlag::Set,
             self.title.as_ref().map(|s| s.as_str()),

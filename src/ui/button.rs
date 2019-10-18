@@ -77,8 +77,7 @@ impl Drawable for Button {
         }
         console.set_alignment(TextAlignment::Center);
         console.print_frame(
-            relative_position + self.position,
-            self.size + (0, 3),
+            relative_position + self.position + (self.size + (0, 3)),
             true,
             BackgroundFlag::Default,
             None,

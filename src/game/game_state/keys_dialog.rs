@@ -176,8 +176,7 @@ impl GameState for KeysDialog {
         game_ref.root.set_default_background(colors::BLACK);
 
         game_ref.root.print_frame(
-            self.position,
-            self.size,
+            self.position + self.size,
             true,
             BackgroundFlag::Set,
             Some("Keys"),

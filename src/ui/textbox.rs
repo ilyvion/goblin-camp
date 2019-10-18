@@ -72,8 +72,7 @@ impl Drawable for TextBox {
         console.set_default_background(self.background_color);
         console.set_default_foreground(self.color);
         console.rect(
-            relative_position + self.position,
-            self.size,
+            relative_position + self.position + self.size,
             true,
             BackgroundFlag::Default,
         );
