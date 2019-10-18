@@ -20,6 +20,8 @@
 use crate::ui::{Position, Size};
 use tcod::{BackgroundFlag, Color, Console, TextAlignment};
 
+// TODO: Replace uses of position, size with rectangle
+
 /// Re-implements the `Console` trait from `tcod`, but makes every method object-safe so they can be
 /// used as a `dyn` trait.
 pub trait SafeConsole {
@@ -184,75 +186,61 @@ pub trait SafeConsole {
     );
 }
 
-pub struct ConsoleWrapper<'c, C: Console>(&'c mut C);
-
-impl<'c, C: Console> ConsoleWrapper<'c, C> {
-    pub fn new(console: &'c mut C) -> Self {
-        Self(console)
-    }
-}
-
-impl<'c, C: Console> From<&'c mut C> for ConsoleWrapper<'c, C> {
-    fn from(console: &'c mut C) -> Self {
-        ConsoleWrapper(console)
-    }
-}
-
-impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
+impl<C: Console> SafeConsole for C {
     fn get_alignment(&self) -> TextAlignment {
-        self.0.get_alignment()
+        Console::get_alignment(self)
     }
 
     fn set_alignment(&mut self, alignment: TextAlignment) {
-        self.0.set_alignment(alignment)
+        Console::set_alignment(self, alignment)
     }
 
     fn set_key_color(&mut self, color: Color) {
-        self.0.set_key_color(color)
+        Console::set_key_color(self, color);
     }
 
     fn width(&self) -> i32 {
-        self.0.width()
+        Console::width(self)
     }
 
     fn height(&self) -> i32 {
-        self.0.height()
+        Console::height(self)
     }
 
     fn get_default_background(&mut self) -> Color {
-        self.0.get_default_background()
+        Console::get_default_background(self)
     }
 
     fn set_default_background(&mut self, color: Color) {
-        self.0.set_default_background(color)
+        Console::set_default_background(self, color)
     }
 
     fn set_default_foreground(&mut self, color: Color) {
-        self.0.set_default_foreground(color)
+        Console::set_default_foreground(self, color)
     }
 
     fn get_char_background(&self, position: Position) -> Color {
-        self.0.get_char_background(position.x, position.y)
+        Console::get_char_background(self, position.x, position.y)
     }
 
     fn get_char_foreground(&self, position: Position) -> Color {
-        self.0.get_char_foreground(position.x, position.y)
+        Console::get_char_foreground(self, position.x, position.y)
     }
 
     fn get_background_flag(&self) -> BackgroundFlag {
-        self.0.get_background_flag()
+        Console::get_background_flag(self)
     }
 
     fn set_background_flag(&mut self, background_flag: BackgroundFlag) {
-        self.0.set_background_flag(background_flag)
+        Console::set_background_flag(self, background_flag)
     }
 
     fn get_char(&self, position: Position) -> char {
-        self.0.get_char(position.x, position.y)
+        Console::get_char(self, position.x, position.y)
     }
 
     fn set_char(&mut self, position: Position, c: char) {
-        self.0.set_char(position.x, position.y, c)
+        Console::set_char(self, position.x, position.y, c)
     }
 
     fn set_char_background(
@@ -261,17 +249,15 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
         color: Color,
         background_flag: BackgroundFlag,
     ) {
-        self.0
-            .set_char_background(position.x, position.y, color, background_flag)
+        Console::set_char_background(self, position.x, position.y, color, background_flag)
     }
 
     fn set_char_foreground(&mut self, position: Position, color: Color) {
-        self.0.set_char_foreground(position.x, position.y, color)
+        Console::set_char_foreground(self, position.x, position.y, color)
     }
 
     fn put_char(&mut self, position: Position, glyph: char, background_flag: BackgroundFlag) {
-        self.0
-            .put_char(position.x, position.y, glyph, background_flag)
+        Console::put_char(self, position.x, position.y, glyph, background_flag)
     }
 
     fn put_char_ex(
@@ -281,21 +267,19 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
         foreground: Color,
         background: Color,
     ) {
-        self.0
-            .put_char_ex(position.x, position.y, glyph, foreground, background)
+        Console::put_char_ex(self, position.x, position.y, glyph, foreground, background)
     }
 
     fn clear(&mut self) {
-        self.0.clear()
+        Console::clear(self)
     }
 
     fn print(&mut self, position: Position, text: &str) {
-        self.0.print(position.x, position.y, text)
+        Console::print(self, position.x, position.y, text)
     }
 
     fn print_rect(&mut self, position: Position, size: Size, text: &str) {
-        self.0
-            .print_rect(position.x, position.y, size.width, size.height, text)
+        Console::print_rect(self, position.x, position.y, size.width, size.height, text)
     }
 
     fn print_ex(
@@ -305,8 +289,14 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
         alignment: TextAlignment,
         text: &str,
     ) {
-        self.0
-            .print_ex(position.x, position.y, background_flag, alignment, text)
+        Console::print_ex(
+            self,
+            position.x,
+            position.y,
+            background_flag,
+            alignment,
+            text,
+        )
     }
 
     fn print_rect_ex(
@@ -317,7 +307,8 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
         alignment: TextAlignment,
         text: &str,
     ) {
-        self.0.print_rect_ex(
+        Console::print_rect_ex(
+            self,
             position.x,
             position.y,
             size.width,
@@ -329,8 +320,7 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
     }
 
     fn get_height_rect(&self, position: Position, size: Size, text: &str) -> i32 {
-        self.0
-            .get_height_rect(position.x, position.y, size.width, size.height, text)
+        Console::get_height_rect(self, position.x, position.y, size.width, size.height, text)
     }
 
     fn rect(
@@ -340,7 +330,8 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
         clear: bool,
         background_flag: BackgroundFlag,
     ) {
-        self.0.rect(
+        Console::rect(
+            self,
             position.x,
             position.y,
             size.width,
@@ -356,13 +347,11 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
         length: i32,
         background_flag: BackgroundFlag,
     ) {
-        self.0
-            .horizontal_line(position.x, position.y, length, background_flag);
+        Console::horizontal_line(self, position.x, position.y, length, background_flag)
     }
 
     fn vertical_line(&mut self, position: Position, length: i32, background_flag: BackgroundFlag) {
-        self.0
-            .vertical_line(position.x, position.y, length, background_flag)
+        Console::vertical_line(self, position.x, position.y, length, background_flag)
     }
 
     fn print_frame(
@@ -373,7 +362,8 @@ impl<'c, C: Console> SafeConsole for ConsoleWrapper<'c, C> {
         background_flag: BackgroundFlag,
         title: Option<&str>,
     ) {
-        self.0.print_frame(
+        Console::print_frame(
+            self,
             position.x,
             position.y,
             size.width,

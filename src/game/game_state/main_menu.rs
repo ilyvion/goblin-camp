@@ -19,6 +19,7 @@
 */
 
 use crate::game::game_state::game::ConfirmNewGame;
+use crate::game::game_state::keys_dialog::KeysDialog;
 use crate::game::game_state::settings_dialog::SettingsDialog;
 use crate::game::game_state::GameStateUpdateResult;
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult};
@@ -72,8 +73,8 @@ impl MainMenu {
         MainMenuEntry {
             label: "Keys",
             shortcut: 'k',
-            active: ActiveState::Never,
-            new_state: MainMenu::quit_game_state_change,
+            active: ActiveState::Always,
+            new_state: KeysDialog::game_state_change,
         },
         MainMenuEntry {
             label: "Mods",

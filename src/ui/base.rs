@@ -85,7 +85,7 @@ impl Add<(i32, i32)> for Position {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Size {
     pub width: i32,
     pub height: i32,

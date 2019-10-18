@@ -109,6 +109,8 @@ pub struct Settings {
     pub translucent_ui: bool,
     pub auto_save: bool,
     pub pause_on_danger: bool,
+
+    pub key_bindings: KeyBindings,
 }
 
 impl Settings {
@@ -156,6 +158,101 @@ impl Default for Settings {
             translucent_ui: false,
             auto_save: true,
             pause_on_danger: false,
+
+            key_bindings: KeyBindings::default(),
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct KeyBindings {
+    pub exit: char,
+    pub basics: char,
+    pub workshops: char,
+    pub orders: char,
+    pub furniture: char,
+    pub stock_manager: char,
+    pub squads: char,
+    pub announcements: char,
+    pub center: char,
+    pub help: char,
+    pub pause: char,
+    pub jobs: char,
+    pub dev_console: char,
+    pub terrain_overlay: char,
+    pub permanent: char,
+}
+
+impl KeyBindings {
+    pub fn key_map<'s>(&'s self) -> impl Iterator<Item = (&'static str, char)> + 's {
+        let mut counter = 0;
+        std::iter::from_fn(move || {
+            let result = match counter {
+                0 => Some(("Announcements", self.announcements)),
+                1 => Some(("Center", self.center)),
+                2 => Some(("Stock Manager", self.stock_manager)),
+                3 => Some(("Exit", self.exit)),
+                4 => Some(("Permanent", self.permanent)),
+                5 => Some(("Furniture", self.furniture)),
+                6 => Some(("Orders", self.orders)),
+                7 => Some(("Help", self.help)),
+                8 => Some(("Basics", self.basics)),
+                9 => Some(("Pause", self.pause)),
+                10 => Some(("Terrain Overlay", self.terrain_overlay)),
+                11 => Some(("Developer Console", self.dev_console)),
+                12 => Some(("Jobs", self.jobs)),
+                13 => Some(("Squads", self.squads)),
+                14 => Some(("Workshops", self.workshops)),
+                _ => None,
+            };
+            if result.is_some() {
+                counter += 1;
+            }
+
+            result
+        })
+    }
+
+    pub fn update_key_map(&mut self, mapping: usize, value: char) {
+        match mapping {
+            0 => self.announcements = value,
+            1 => self.center = value,
+            2 => self.stock_manager = value,
+            3 => self.exit = value,
+            4 => self.permanent = value,
+            5 => self.furniture = value,
+            6 => self.orders = value,
+            7 => self.help = value,
+            8 => self.basics = value,
+            9 => self.pause = value,
+            10 => self.terrain_overlay = value,
+            11 => self.dev_console = value,
+            12 => self.jobs = value,
+            13 => self.squads = value,
+            14 => self.workshops = value,
+            _ => panic!("update_key_map called with out of bounds 'mapping' value"),
+        }
+    }
+}
+
+impl Default for KeyBindings {
+    fn default() -> Self {
+        Self {
+            exit: 'q',
+            basics: 'b',
+            workshops: 'w',
+            orders: 'o',
+            furniture: 'f',
+            stock_manager: 's',
+            squads: 'm',
+            announcements: 'a',
+            center: 'c',
+            help: 'h',
+            pause: ' ',
+            jobs: 'j',
+            dev_console: '`',
+            terrain_overlay: 't',
+            permanent: 'p',
         }
     }
 }

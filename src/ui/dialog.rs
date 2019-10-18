@@ -24,7 +24,7 @@ use crate::ui::menu_result::MenuResult;
 use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
 use crate::{drawable_prerequisites_impl, indexed_original_impl};
-use tcod::{BackgroundFlag, Console};
+use tcod::BackgroundFlag;
 
 pub struct Dialog<D: Drawable> {
     position: Position,

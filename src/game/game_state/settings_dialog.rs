@@ -42,7 +42,7 @@ pub type Result<T = (), E = Error> = std::result::Result<T, E>;
 
 pub struct SettingsDialog {
     fields: [SettingField; 2],
-    focused_field: Option<usize>,
+    focused_field: usize,
     original_settings: Option<Settings>,
     message_box: bool,
 }
@@ -72,7 +72,7 @@ impl SettingsDialog {
                     invalid: false,
                 },
             ],
-            focused_field: Some(0),
+            focused_field: 0,
             original_settings: None,
             message_box: false,
         })
@@ -126,9 +126,9 @@ impl GameState for SettingsDialog {
 
             self.save_settings(&game_ref.data.settings, game_ref.data.paths.settings_file())?;
             return Ok(GameStateChange::Pop);
-        } else if let Some(focused_field) = self.focused_field {
-            let field_value = &mut self.fields[focused_field].value;
-            let field_invalid = &mut self.fields[focused_field].invalid;
+        } else {
+            let field_value = &mut self.fields[self.focused_field].value;
+            let field_invalid = &mut self.fields[self.focused_field].invalid;
 
             let key = game_ref.input.key_event.raw.printable;
             let code = game_ref.input.key_event.raw.code;
@@ -143,7 +143,7 @@ impl GameState for SettingsDialog {
             if field_updated {
                 if let Ok(value) = field_value.parse() {
                     *field_invalid = false;
-                    if value == 0 {
+                    if self.focused_field == 0 {
                         game_ref.data.settings.resolution_x = value;
                     } else {
                         game_ref.data.settings.resolution_y = value;
@@ -154,24 +154,24 @@ impl GameState for SettingsDialog {
             }
         }
 
-        let position = Position::new(
+        let dialog_position = Position::new(
             game_ref.root.width() / 2 - (Self::WIDTH / 2),
             game_ref.root.height() / 2 - (Self::HEIGHT / 2),
         );
 
         let mouse_event = game_ref.input.mouse_event;
         if mouse_event.clicked
-            && (position + Size::new(Self::WIDTH, Self::HEIGHT))
+            && (dialog_position + Size::new(Self::WIDTH, Self::HEIGHT))
                 .contains_position(mouse_event.character_position)
         {
-            let internal_position = mouse_event.character_position - position;
+            let internal_position = mouse_event.character_position - dialog_position;
 
             match internal_position.y {
                 4 | 5 => {
-                    self.focused_field = Some(0);
+                    self.focused_field = 0;
                 }
                 6 | 7 => {
-                    self.focused_field = Some(1);
+                    self.focused_field = 1;
                 }
                 9 => {
                     // Fullscreen
@@ -236,10 +236,8 @@ impl GameState for SettingsDialog {
 
         let mut current_y = y + 3;
         for (i, field) in self.fields.iter().enumerate() {
-            if let Some(focused_field) = self.focused_field {
-                if focused_field == i {
-                    game_ref.root.set_default_foreground(colors::GREEN);
-                }
+            if self.focused_field == i {
+                game_ref.root.set_default_foreground(colors::GREEN);
             }
             game_ref.root.print(x + 1, current_y, field.label);
 

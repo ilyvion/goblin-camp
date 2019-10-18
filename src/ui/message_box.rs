@@ -23,7 +23,6 @@ use crate::game::game_state::{GameState, GameStateChange, GameStateResult, GameS
 use crate::game::GameRef;
 use crate::ui::drawable::Drawable;
 use crate::ui::{Button, Dialog, Label};
-use crate::util::ConsoleWrapper;
 use std::borrow::Cow;
 use tcod::TextAlignment;
 
@@ -145,7 +144,6 @@ impl GameState for MessageBox {
             .update(Position::default(), game_ref.input.clone());
         if result.kind.is_some() {
             let button = result.data.unwrap().downcast::<String>().unwrap();
-            println!("BUTTON: {}", button);
             if button.as_str() == self.first_button_text {
                 let result = (self.first_result.take().unwrap())();
                 if let GameStateChange::None = &result {
@@ -167,8 +165,7 @@ impl GameState for MessageBox {
     }
 
     fn draw(&mut self, game_ref: &mut GameRef) -> GameStateResult {
-        let mut wrapped_root = ConsoleWrapper::new(game_ref.root);
-        self.dialog.draw(Position::default(), &mut wrapped_root);
+        self.dialog.draw(Position::default(), game_ref.root);
 
         Ok(())
     }
