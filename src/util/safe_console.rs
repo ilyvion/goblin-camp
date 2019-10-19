@@ -17,7 +17,7 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::ui::{Position, Rectangle, Size};
+use crate::ui::{Position, Rectangle};
 use tcod::{BackgroundFlag, Color, Console, TextAlignment};
 
 // TODO: Replace uses of position, size with rectangle

@@ -18,9 +18,12 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+pub mod keys_dialog;
+pub mod settings_dialog;
+
 use crate::game::game_state::game::ConfirmNewGame;
-use crate::game::game_state::keys_dialog::KeysDialog;
-use crate::game::game_state::settings_dialog::SettingsDialog;
+use crate::game::game_state::main_menu::keys_dialog::KeysDialog;
+use crate::game::game_state::main_menu::settings_dialog::SettingsDialog;
 use crate::game::game_state::GameStateUpdateResult;
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult};
 use crate::game::{Game, GameRef};

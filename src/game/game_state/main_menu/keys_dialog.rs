@@ -19,11 +19,10 @@
 */
 
 use crate::data::paths::PathProvider;
-use crate::data::settings::{Renderer, Settings};
+use crate::data::settings::Settings;
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult, GameStateUpdateResult};
 use crate::game::GameRef;
 use crate::ui::{MessageBox, Position, Size};
-use crate::util::Flip;
 use crate::util::SafeConsole;
 use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;

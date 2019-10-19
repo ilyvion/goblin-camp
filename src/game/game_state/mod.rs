@@ -82,6 +82,4 @@ impl Display for dyn GameState {
 }
 
 pub mod game;
-pub mod keys_dialog;
 pub mod main_menu;
-pub mod settings_dialog;
