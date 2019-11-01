@@ -1,4 +1,5 @@
 /*
+    Copyright 2010-2011 Ilkka Halila
     Copyright 2019 Alexander Krivács Schrøder
 
     This file is part of Goblin Camp Revival.
@@ -17,37 +18,30 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-mod safe_console;
-pub mod tcod;
+mod v1;
+pub use v1::*;
 
-pub use safe_console::*;
-use std::mem;
+mod v2;
+pub use v2::*;
 
-pub trait Flip {
-    fn flip(&mut self);
+use crate::data::tile_sets::tile_set::TilesetMetadata;
+use snafu::Snafu;
+use std::path::PathBuf;
+
+#[derive(Debug, Snafu)]
+pub enum Error {
+    Io {
+        source: std::io::Error,
+    },
+    Parser {
+        source: serde_tcod_config_parser::de::Error,
+    },
+    NoParser,
+    PathParentError {
+        child: PathBuf,
+    },
 }
 
-impl Flip for bool {
-    fn flip(&mut self) {
-        mem::replace(self, !*self);
-    }
-}
-
-pub trait OptionExt<T> {
-    fn get_or_maybe_insert(&mut self, v: Option<T>) -> Option<&mut T> {
-        self.get_or_maybe_insert_with(|| v)
-    }
-
-    fn get_or_maybe_insert_with<F: FnOnce() -> Option<T>>(&mut self, f: F) -> Option<&mut T>;
-}
-
-impl<T> OptionExt<T> for Option<T> {
-    fn get_or_maybe_insert_with<F: FnOnce() -> Option<T>>(&mut self, f: F) -> Option<&mut T> {
-        match *self {
-            None => *self = f(),
-            _ => (),
-        }
-
-        self.as_mut()
-    }
+pub trait TileSetParser {
+    fn parse_metadata(&mut self) -> Result<Box<dyn TilesetMetadata>, Error>;
 }

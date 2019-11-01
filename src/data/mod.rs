@@ -23,6 +23,7 @@ pub mod data;
 pub mod paths;
 pub mod random;
 pub mod settings;
+pub mod tile_sets;
 
 use paths::{PathProvider, Paths};
 use random::DefaultGenerator;
@@ -38,7 +39,7 @@ pub enum DataError {
     SettingsLoad { source: settings::Error },
 }
 
-pub type Result<T, E = DataError> = std::result::Result<T, E>;
+pub type Result<T = (), E = DataError> = std::result::Result<T, E>;
 
 pub struct Data {
     pub generator: Box<dyn Generator>,

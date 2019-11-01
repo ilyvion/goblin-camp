@@ -37,7 +37,7 @@ pub enum Error {
     EndGame,
 }
 
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type Result<T = (), E = Error> = std::result::Result<T, E>;
 
 pub struct Game {
     root: Root,
@@ -96,7 +96,7 @@ impl Game {
         }
     }
 
-    pub fn run(&mut self) -> Result<()> {
+    pub fn run(&mut self) -> Result {
         let method_logger = self.logger.new(o!("Method" => "Game::run"));
         let mut game_state_changed = true;
         while !self.root.window_closed() {

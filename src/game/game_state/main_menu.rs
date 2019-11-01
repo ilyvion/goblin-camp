@@ -20,10 +20,12 @@
 
 pub mod keys_dialog;
 pub mod settings_dialog;
+pub mod tile_sets_dialog;
 
 use crate::game::game_state::game::ConfirmNewGame;
 use crate::game::game_state::main_menu::keys_dialog::KeysDialog;
 use crate::game::game_state::main_menu::settings_dialog::SettingsDialog;
+use crate::game::game_state::main_menu::tile_sets_dialog::TileSetsDialog;
 use crate::game::game_state::GameStateUpdateResult;
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult};
 use crate::game::{Game, GameRef};
@@ -88,8 +90,8 @@ impl MainMenu {
         MainMenuEntry {
             label: "Tile sets",
             shortcut: 't',
-            active: ActiveState::Never,
-            new_state: MainMenu::quit_game_state_change,
+            active: ActiveState::Always,
+            new_state: TileSetsDialog::game_state_change,
         },
         MainMenuEntry {
             label: "Exit",

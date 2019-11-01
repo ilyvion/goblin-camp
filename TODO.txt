@@ -1,2 +1,3 @@
 * Replace custom menu rendering code and settings dialog rendering code with UI components
 * Extract UI components out into separate crate.
+* Go through depended on libraries and make sure proper attribution is shown/printed in the relevant places.

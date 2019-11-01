@@ -21,7 +21,7 @@
 use std::fmt::{Display, Formatter, Result as FormatResult};
 use std::ops::{Add, Sub};
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Debug)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
@@ -94,6 +94,12 @@ pub struct Size {
 impl Size {
     pub const fn new(width: i32, height: i32) -> Self {
         Self { width, height }
+    }
+}
+
+impl Display for Size {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FormatResult {
+        write!(f, "{}x{}", self.width, self.height)
     }
 }
 

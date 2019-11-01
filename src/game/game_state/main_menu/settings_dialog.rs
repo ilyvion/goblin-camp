@@ -23,6 +23,7 @@ use crate::data::settings::{Renderer, Settings};
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult, GameStateUpdateResult};
 use crate::game::GameRef;
 use crate::ui::{MessageBox, Position, Size};
+use crate::util::tcod::Chars;
 use crate::util::Flip;
 use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;
@@ -50,9 +51,6 @@ pub struct SettingsDialog {
 impl SettingsDialog {
     const WIDTH: i32 = 40;
     const HEIGHT: i32 = 28;
-
-    const EMPTY_CHECKBOX: &'static str = "à";
-    const CHECKED_CHECKBOX: &'static str = "á";
 
     pub fn game_state_change(_: &mut GameRef) -> GameStateChange {
         GameStateChange::Push(Self::game_state())
@@ -199,7 +197,7 @@ impl GameState for SettingsDialog {
                 }
                 26 => {
                     // Use tile set
-                    game_ref.data.settings.use_tileset.flip();
+                    game_ref.data.settings.use_tile_set.flip();
                 }
                 22..=24 => {
                     game_ref.data.settings.renderer =
@@ -268,9 +266,9 @@ impl GameState for SettingsDialog {
                 x + 1,
                 y,
                 if !value {
-                    Self::EMPTY_CHECKBOX
+                    Chars::CheckboxUnset.into_string()
                 } else {
-                    Self::CHECKED_CHECKBOX
+                    Chars::CheckboxSet.into_string()
                 },
             );
             root.print(x + 3, y, text);
@@ -336,7 +334,7 @@ impl GameState for SettingsDialog {
         current_y += 5;
         print_bool_setting(
             game_ref.root,
-            game_ref.data.settings.use_tileset,
+            game_ref.data.settings.use_tile_set,
             current_y,
             "Use tile set",
         );

@@ -1,4 +1,5 @@
 /*
+    Copyright 2010-2011 Ilkka Halila
     Copyright 2019 Alexander Krivács Schrøder
 
     This file is part of Goblin Camp Revival.
@@ -17,37 +18,19 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-mod safe_console;
-pub mod tcod;
+use crate::ui::Size;
+use std::borrow::Cow;
+use std::path::Path;
 
-pub use safe_console::*;
-use std::mem;
+pub trait TilesetMetadata {
+    fn dir(&self) -> &Path;
+    fn name(&self) -> &str;
+    fn author(&self) -> &str;
+    fn version(&self) -> &str;
+    fn description(&self) -> &str;
+    fn size(&self) -> Size;
 
-pub trait Flip {
-    fn flip(&mut self);
-}
-
-impl Flip for bool {
-    fn flip(&mut self) {
-        mem::replace(self, !*self);
-    }
-}
-
-pub trait OptionExt<T> {
-    fn get_or_maybe_insert(&mut self, v: Option<T>) -> Option<&mut T> {
-        self.get_or_maybe_insert_with(|| v)
-    }
-
-    fn get_or_maybe_insert_with<F: FnOnce() -> Option<T>>(&mut self, f: F) -> Option<&mut T>;
-}
-
-impl<T> OptionExt<T> for Option<T> {
-    fn get_or_maybe_insert_with<F: FnOnce() -> Option<T>>(&mut self, f: F) -> Option<&mut T> {
-        match *self {
-            None => *self = f(),
-            _ => (),
-        }
-
-        self.as_mut()
+    fn dir_name(&self) -> Cow<str> {
+        self.dir().file_name().unwrap().to_string_lossy()
     }
 }
