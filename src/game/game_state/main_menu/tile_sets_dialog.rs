@@ -207,7 +207,7 @@ impl GameState for TileSetsDialog {
             game_ref.root.put_char(
                 self.list_width - 2,
                 1,
-                Chars::ArrowN.into_char(),
+                Chars::ArrowN.into(),
                 BackgroundFlag::Set,
             );
         }
@@ -215,7 +215,7 @@ impl GameState for TileSetsDialog {
             game_ref.root.put_char(
                 self.list_width - 2,
                 self.screen_height - 2,
-                Chars::ArrowS.into_char(),
+                Chars::ArrowS.into(),
                 BackgroundFlag::Set,
             );
         }

@@ -56,13 +56,10 @@ impl Game {
         let logger = parent_logger.new(o!());
         let method_logger = logger.new(o!("Method" => "Game::new"));
 
-        let size = if data.settings.fullscreen {
+        let size = if data.settings.display.fullscreen {
             tcod::system::get_current_resolution()
         } else {
-            (
-                data.settings.resolution_x as i32,
-                data.settings.resolution_y as i32,
-            )
+            data.settings.display.resolution.into()
         };
 
         let char_size = tcod::system::get_char_size();
@@ -80,7 +77,7 @@ impl Game {
 
         let root = Root::initializer()
             .size(size.0 / char_size.0, size.1 / char_size.1)
-            .fullscreen(data.settings.fullscreen)
+            .fullscreen(data.settings.display.fullscreen)
             .title(Game::NAME)
             .renderer(data.settings.renderer.into())
             .init();

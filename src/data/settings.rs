@@ -18,6 +18,8 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::ui::Size;
+use crate::util::find_largest_fit;
 use serde_derive::{Deserialize, Serialize};
 use snafu::{ResultExt, Snafu};
 use std::path::{Path, PathBuf};
@@ -95,9 +97,6 @@ impl From<Renderer> for tcod::Renderer {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Settings {
-    pub resolution_x: u32,
-    pub resolution_y: u32,
-    pub fullscreen: bool,
     pub renderer: Renderer,
     pub use_tile_set: bool,
     pub tile_set: Option<String>,
@@ -110,6 +109,7 @@ pub struct Settings {
     pub auto_save: bool,
     pub pause_on_danger: bool,
 
+    pub display: Display,
     pub key_bindings: KeyBindings,
 }
 
@@ -144,9 +144,7 @@ impl Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            resolution_x: 800,
-            resolution_y: 600,
-            fullscreen: false,
+            display: Display::default(),
             renderer: Renderer::default(),
             use_tile_set: false,
             tile_set: None,
@@ -162,6 +160,35 @@ impl Default for Settings {
             key_bindings: KeyBindings::default(),
         }
     }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Display {
+    pub fullscreen: bool,
+
+    #[serde(flatten)]
+    pub resolution: Size,
+}
+
+impl Default for Display {
+    fn default() -> Self {
+        Self {
+            fullscreen: false,
+            resolution: get_sensible_default_resolution(),
+        }
+    }
+}
+
+const WIDTHS: [i32; 8] = [800, 1024, 1280, 1366, 1440, 1600, 1920, 2560];
+const HEIGHTS: [i32; 7] = [600, 768, 900, 1080, 1200, 1440, 1600];
+
+fn get_sensible_default_resolution() -> Size {
+    let (mut width, mut height) = tcod::system::get_current_resolution();
+
+    find_largest_fit(&mut width, &WIDTHS);
+    find_largest_fit(&mut height, &HEIGHTS);
+
+    Size::new(width, height)
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

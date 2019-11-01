@@ -51,3 +51,19 @@ impl<T> OptionExt<T> for Option<T> {
         self.as_mut()
     }
 }
+
+/// Takes a slice of `values`, looking at them two at a time, and if the given `value` is smaller
+/// or equal to the second value, set it to the first value.
+pub fn find_largest_fit<T: PartialOrd + Copy>(value: &mut T, values: &[T]) {
+    let mut value_set = false;
+    for values in values.windows(2) {
+        if *value <= values[1] {
+            *value = values[0];
+            value_set = true;
+            break;
+        }
+    }
+    if !value_set {
+        *value = values[values.len() - 1];
+    }
+}

@@ -91,9 +91,9 @@ impl GameState for SettingsDialog {
     fn activate(&mut self, game_ref: &mut GameRef) -> GameStateResult {
         if !self.message_box {
             self.original_settings = Some(game_ref.data.settings.clone());
-            self.fields[0].value = game_ref.data.settings.resolution_x.to_string();
+            self.fields[0].value = game_ref.data.settings.display.resolution.width.to_string();
             self.fields[0].invalid = false;
-            self.fields[1].value = game_ref.data.settings.resolution_y.to_string();
+            self.fields[1].value = game_ref.data.settings.display.resolution.height.to_string();
             self.fields[1].invalid = false;
         } else {
             self.message_box = false;
@@ -142,9 +142,9 @@ impl GameState for SettingsDialog {
                 if let Ok(value) = field_value.parse() {
                     *field_invalid = false;
                     if self.focused_field == 0 {
-                        game_ref.data.settings.resolution_x = value;
+                        game_ref.data.settings.display.resolution.width = value;
                     } else {
-                        game_ref.data.settings.resolution_y = value;
+                        game_ref.data.settings.display.resolution.height = value;
                     }
                 } else {
                     *field_invalid = true;
@@ -173,7 +173,7 @@ impl GameState for SettingsDialog {
                 }
                 9 => {
                     // Fullscreen
-                    game_ref.data.settings.fullscreen.flip();
+                    game_ref.data.settings.display.fullscreen.flip();
                 }
                 11 => {
                     // Tutorial
@@ -262,21 +262,22 @@ impl GameState for SettingsDialog {
         let print_bool_setting = |root: &mut Root, value: bool, y: i32, text: &str| {
             root.set_default_foreground(if value { colors::GREEN } else { colors::GREY });
 
-            root.print(
+            root.put_char(
                 x + 1,
                 y,
                 if !value {
-                    Chars::CheckboxUnset.into_string()
+                    Chars::CheckboxUnset.into()
                 } else {
-                    Chars::CheckboxSet.into_string()
+                    Chars::CheckboxSet.into()
                 },
+                BackgroundFlag::Default,
             );
             root.print(x + 3, y, text);
         };
 
         print_bool_setting(
             game_ref.root,
-            game_ref.data.settings.fullscreen,
+            game_ref.data.settings.display.fullscreen,
             current_y,
             "Fullscreen mode",
         );

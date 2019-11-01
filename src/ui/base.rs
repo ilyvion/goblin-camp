@@ -18,6 +18,7 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as FormatResult};
 use std::ops::{Add, Sub};
 
@@ -85,7 +86,7 @@ impl Add<(i32, i32)> for Position {
     }
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct Size {
     pub width: i32,
     pub height: i32,
@@ -94,6 +95,12 @@ pub struct Size {
 impl Size {
     pub const fn new(width: i32, height: i32) -> Self {
         Self { width, height }
+    }
+}
+
+impl From<Size> for (i32, i32) {
+    fn from(s: Size) -> Self {
+        (s.width, s.height)
     }
 }
 

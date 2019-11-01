@@ -84,11 +84,14 @@ pub enum Chars {
     BulletSquare = 254,
 }
 
-impl Chars {
-    pub fn into_char(self) -> char {
-        self as u8 as char
+impl From<Chars> for char {
+    fn from(c: Chars) -> Self {
+        c as u8 as char
     }
-    pub fn into_string(self) -> String {
-        self.into_char().to_string()
+}
+
+impl From<Chars> for String {
+    fn from(c: Chars) -> Self {
+        char::from(c).to_string()
     }
 }
