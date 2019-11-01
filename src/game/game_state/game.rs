@@ -39,7 +39,6 @@ impl GameState for ConfirmNewGame {
     fn update(&mut self, game_ref: &mut GameRef) -> Result<GameStateChange, GameStateError> {
         game_ref.is_running = true;
         if game_ref.is_running {
-            // TODO: Find a way to generalize these message boxes so that
             Ok(GameStateChange::PopPush(MessageBox::game_state(
                 game_ref,
                 "A game is already running, are you sure you want  to start a new one?",

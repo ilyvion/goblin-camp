@@ -18,7 +18,7 @@
 */
 
 use crate::game::Input;
-use crate::ui::menu_result::{HitResult, MenuResult};
+use crate::ui::update_result::{HitResult, UpdateResult};
 use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
 
@@ -62,12 +62,12 @@ macro_rules! drawable_prerequisites_impl {
 
 pub trait Drawable: Positioned + Sized + VisibilityFn {
     fn draw(&self, relative_position: Position, console: &mut dyn SafeConsole);
-    fn update(&mut self, relative_position: Position, input: Input) -> MenuResult {
+    fn update(&mut self, relative_position: Position, input: Input) -> UpdateResult {
         let rectangle = relative_position + self.position() + self.size();
         if rectangle.contains_position(input.mouse_event.character_position) {
-            MenuResult::hit(HitResult::Hit)
+            UpdateResult::hit(HitResult::Hit)
         } else {
-            MenuResult::hit(HitResult::NoHit)
+            UpdateResult::hit(HitResult::NoHit)
         }
     }
 

@@ -20,7 +20,7 @@
 
 use crate::game::{GameRef, Input};
 use crate::ui::drawable::{Drawable, Positioned, Sized};
-use crate::ui::menu_result::MenuResult;
+use crate::ui::update_result::UpdateResult;
 use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
 use crate::{drawable_prerequisites_impl, indexed_original_impl};
@@ -68,7 +68,7 @@ impl<D: Drawable> Drawable for Dialog<D> {
         self.contents.draw(self.position(), console);
     }
 
-    fn update(&mut self, _: Position, input: Input) -> MenuResult {
+    fn update(&mut self, _: Position, input: Input) -> UpdateResult {
         self.contents.update(self.position(), input)
     }
 }

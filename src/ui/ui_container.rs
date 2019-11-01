@@ -20,8 +20,8 @@
 
 use crate::game::Input;
 use crate::ui::drawable::Drawable;
-use crate::ui::menu_result::{HitResult, MenuResult};
 use crate::ui::originals::{HoldingOriginals, IndexedOriginal};
+use crate::ui::update_result::{HitResult, UpdateResult};
 use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
 use crate::{drawable_prerequisites_impl, indexed_original_impl};
@@ -71,7 +71,7 @@ impl Drawable for UiContainer {
         }
     }
 
-    fn update(&mut self, relative_position: Position, input: Input) -> MenuResult {
+    fn update(&mut self, relative_position: Position, input: Input) -> UpdateResult {
         for component in &mut self.components {
             if component.visible() {
                 let result = component.update(relative_position + self.position, input.clone());
@@ -83,9 +83,9 @@ impl Drawable for UiContainer {
 
         let rectangle = self.position + self.size;
         if rectangle.contains_position(input.mouse_event.character_position) {
-            MenuResult::hit(HitResult::Hit)
+            UpdateResult::hit(HitResult::Hit)
         } else {
-            MenuResult::hit(HitResult::NoHit)
+            UpdateResult::hit(HitResult::NoHit)
         }
     }
 }

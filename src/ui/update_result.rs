@@ -32,15 +32,14 @@ pub enum RespondKind {
     Mouse(Position),
 }
 
-pub struct MenuResult {
+pub struct UpdateResult {
     pub hit: HitResult,
     pub kind: Option<RespondKind>,
     pub dismiss: bool,
     pub data: Option<Box<dyn Any>>,
 }
 
-// TODO: Name something better
-impl MenuResult {
+impl UpdateResult {
     pub fn new(
         hit: HitResult,
         kind: Option<RespondKind>,

@@ -107,8 +107,7 @@ impl Coordinate {
         [self.x, self.y]
     }
 
-    // TODO: Rename to `clamp_to_rectangle` or similar. What is does is ensure we are inside the given bounds.
-    pub fn shrink_rectangle(self, low: Self, high: Self) -> Self {
+    pub fn clamp_to_rectangle(self, low: Self, high: Self) -> Self {
         let mut res = self;
         Axis::for_both(|a| res[a] = low[a].max(high[a].min(res[a])));
 
@@ -116,7 +115,7 @@ impl Coordinate {
     }
 
     pub fn shrink_extent(self, origin: Self, extent: Self) -> Self {
-        self.shrink_rectangle(origin, origin + extent - 1)
+        self.clamp_to_rectangle(origin, origin + extent - 1)
     }
 }
 

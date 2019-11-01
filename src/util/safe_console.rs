@@ -20,8 +20,6 @@
 use crate::ui::{Position, Rectangle};
 use tcod::{BackgroundFlag, Color, Console, TextAlignment};
 
-// TODO: Replace uses of position, size with rectangle
-
 /// Re-implements the `Console` trait from `tcod`, but makes every method object-safe so they can be
 /// used as a `dyn` trait.
 pub trait SafeConsole {

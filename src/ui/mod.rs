@@ -24,11 +24,11 @@ mod checkbox;
 mod dialog;
 pub mod drawable;
 mod label;
-pub mod menu_result;
 mod message_box;
 pub mod originals;
 mod textbox;
 mod ui_container;
+pub mod update_result;
 
 pub use base::*;
 pub use button::*;

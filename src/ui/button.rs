@@ -20,7 +20,7 @@
 
 use crate::game::Input;
 use crate::ui::drawable::Drawable;
-use crate::ui::menu_result::{HitResult, MenuResult, RespondKind};
+use crate::ui::update_result::{HitResult, RespondKind, UpdateResult};
 use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
 use crate::{drawable_prerequisites_impl, indexed_original_impl};
@@ -88,11 +88,11 @@ impl Drawable for Button {
         );
     }
 
-    fn update(&mut self, relative_position: Position, input: Input) -> MenuResult {
+    fn update(&mut self, relative_position: Position, input: Input) -> UpdateResult {
         if let Some(shortcut) = self.shortcut {
             if input.key_event.raw.printable == shortcut {
                 // TODO: Also support keycode?
-                return MenuResult::new(
+                return UpdateResult::new(
                     HitResult::Hit,
                     Some(RespondKind::Key(shortcut)),
                     self.dismiss,
@@ -115,11 +115,11 @@ impl Drawable for Button {
             } else {
                 None
             };
-            MenuResult::new(HitResult::Hit, response, self.dismiss, data)
+            UpdateResult::new(HitResult::Hit, response, self.dismiss, data)
         } else {
             self.selected = false;
 
-            MenuResult::hit(HitResult::NoHit)
+            UpdateResult::hit(HitResult::NoHit)
         }
     }
 }
