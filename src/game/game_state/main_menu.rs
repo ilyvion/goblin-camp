@@ -347,7 +347,7 @@ impl MainMenuEntry {
         // TODO: Proper logic for deciding whether this entry is active or not
         match self.active {
             ActiveState::Always => true,
-            ActiveState::IfRunning => game_ref.is_running,
+            ActiveState::IfRunning => game_ref.game_data.running,
             _ => false,
         }
     }

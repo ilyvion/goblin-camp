@@ -18,6 +18,9 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::data::random::Selection;
+use crate::ui::{Position, Size};
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Display;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
@@ -33,6 +36,45 @@ pub enum Direction {
     West,
     NorthWest,
     NoDirection,
+}
+
+impl Direction {
+    pub fn reverse(self) -> Direction {
+        match self {
+            Direction::North => Direction::South,
+            Direction::NorthEast => Direction::SouthWest,
+            Direction::East => Direction::West,
+            Direction::SouthEast => Direction::NorthWest,
+            Direction::South => Direction::North,
+            Direction::SouthWest => Direction::NorthEast,
+            Direction::West => Direction::East,
+            Direction::NorthWest => Direction::SouthEast,
+            Direction::NoDirection => Direction::NoDirection,
+        }
+    }
+}
+
+const DIRECTIONS: [Direction; 8] = [
+    Direction::North,
+    Direction::NorthEast,
+    Direction::East,
+    Direction::SouthEast,
+    Direction::South,
+    Direction::SouthWest,
+    Direction::West,
+    Direction::NorthWest,
+];
+
+impl Selection for Direction {
+    fn get_choices() -> &'static [Direction] {
+        &DIRECTIONS
+    }
+}
+
+impl Default for Direction {
+    fn default() -> Self {
+        Direction::NoDirection
+    }
 }
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Debug, Hash)]
@@ -67,6 +109,17 @@ impl Coordinate {
 
     pub fn new(x: i32, y: i32) -> Self {
         Self { x, y }
+    }
+
+    pub fn from_slices(x: &[i32], y: &[i32]) -> Vec<Coordinate> {
+        assert_eq!(x.len(), y.len());
+
+        let mut coordinates = vec![];
+        for (&x, &y) in x.iter().zip(y) {
+            coordinates.push(Coordinate::new(x, y));
+        }
+
+        coordinates
     }
 
     pub fn min(self, other: Self) -> Self {
@@ -117,11 +170,97 @@ impl Coordinate {
     pub fn shrink_extent(self, origin: Self, extent: Self) -> Self {
         self.clamp_to_rectangle(origin, origin + extent - 1)
     }
+
+    pub fn rectilinear_distance_to(self, other: Coordinate) -> i32 {
+        let mut distance = 0;
+        Axis::for_both(|a| distance += (other[a] - self[a]).abs());
+
+        distance
+    }
+
+    pub fn straight_line_distance_to(self, other: Coordinate) -> f32 {
+        let mut distance = 0.;
+        Axis::for_both(|a| distance += ((other[a] - self[a]) as f32).powi(2));
+
+        distance.sqrt()
+    }
+
+    pub fn xy_difference(self, other: Coordinate) -> i32 {
+        // Alex: I have no idea what this calculation from the original game is supposed to be.
+        // x distance minus y distance means what? Originally found in `Map::CalculateFlow`
+        (self.x - other.x).abs() - (self.y - other.y).abs()
+    }
+
+    pub fn direction_to(self, other: Coordinate) -> Direction {
+        use Direction::*;
+        use Ordering::*;
+        match (other.x.cmp(&self.x), other.y.cmp(&self.y)) {
+            (Equal, Less) => North,
+            (Greater, Less) => NorthEast,
+            (Greater, Equal) => East,
+            (Greater, Greater) => SouthEast,
+            (Equal, Greater) => South,
+            (Less, Greater) => SouthWest,
+            (Less, Equal) => West,
+            (Less, Less) => NorthWest,
+            (Equal, Equal) => NoDirection,
+        }
+    }
+
+    pub fn direction_to_rounded(self, other: Coordinate) -> Direction {
+        use Direction::*;
+
+        let x = other.x - self.x;
+        let y = other.y - self.y;
+        if x == 0 && y == 0 {
+            return NoDirection;
+        }
+
+        let x = f64::from(x);
+        let y = -f64::from(y);
+        let angle = y.atan2(x);
+        let ordinal = (8. * angle / (2. * std::f64::consts::PI) + 8.).round() as usize % 8;
+        match ordinal {
+            0 => East,
+            1 => NorthEast,
+            2 => North,
+            3 => NorthWest,
+            4 => West,
+            5 => SouthWest,
+            6 => South,
+            7 => SouthEast,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+impl From<(i32, i32)> for Coordinate {
+    fn from(tuple: (i32, i32)) -> Self {
+        Self::new(tuple.0, tuple.1)
+    }
+}
+
+impl From<Coordinate> for (i32, i32) {
+    fn from(coordinate: Coordinate) -> Self {
+        (coordinate.x, coordinate.y)
+    }
+}
+
+impl From<Coordinate> for Position {
+    fn from(coordinate: Coordinate) -> Self {
+        Position::new(coordinate.x, coordinate.y)
+    }
+}
+
+impl From<Size> for Coordinate {
+    fn from(size: Size) -> Self {
+        Self::new(size.width, size.height)
     }
 }
 
@@ -260,5 +399,43 @@ impl Div<i32> for Coordinate {
 impl DivAssign<i32> for Coordinate {
     fn div_assign(&mut self, rhs: i32) {
         Axis::both().for_each(|a| self[a] /= rhs);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::coordinate::{Coordinate, Direction};
+
+    #[test]
+    fn distances() {
+        let o = Coordinate::ORIGIN;
+        let pythagoras = Coordinate::new(3, 4);
+
+        assert_eq!(7, o.rectilinear_distance_to(pythagoras));
+        assert_eq!(5., o.straight_line_distance_to(pythagoras));
+    }
+
+    #[test]
+    fn directions() {
+        let o = Coordinate::ORIGIN;
+        let mut u = Coordinate::new(1, 0);
+
+        assert_eq!(o.direction_to(u), Direction::East);
+        u.y = 1;
+        assert_eq!(o.direction_to(u), Direction::SouthEast);
+        u.y = -1;
+        assert_eq!(o.direction_to(u), Direction::NorthEast);
+        u.x = 0;
+        assert_eq!(o.direction_to(u), Direction::North);
+        u.x = -1;
+        assert_eq!(o.direction_to(u), Direction::NorthWest);
+        u.y = 0;
+        assert_eq!(o.direction_to(u), Direction::West);
+        u.y = 1;
+        assert_eq!(o.direction_to(u), Direction::SouthWest);
+        u.x = 0;
+        assert_eq!(o.direction_to(u), Direction::South);
+        u.y = 0;
+        assert_eq!(o.direction_to(u), Direction::NoDirection);
     }
 }

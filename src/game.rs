@@ -19,16 +19,18 @@
 */
 
 use crate::data::Data;
+use crate::game::game_data::GameData;
 use crate::game::game_state::main_menu::MainMenu;
 use crate::game::game_state::{GameState, GameStateChange};
 use crate::ui::Position;
 use crate::Config;
 use slog::{debug, o, trace};
 use snafu::{ResultExt, Snafu};
-use tcod::console::Root;
+use tcod::console::{Offscreen, Root};
 use tcod::input::{Key, Mouse};
 use tcod::{colors, input, Console};
 
+pub mod game_data;
 pub mod game_state;
 
 #[derive(Debug, Snafu)]
@@ -41,11 +43,13 @@ pub type Result<T = (), E = Error> = std::result::Result<T, E>;
 
 pub struct Game {
     root: Root,
+    buffer: Offscreen,
     game_states: Vec<Box<dyn GameState>>,
     logger: slog::Logger,
     config: Config,
     data: Data,
     previous_mouse: Mouse,
+    game_data: GameData,
 }
 
 impl Game {
@@ -83,13 +87,17 @@ impl Game {
             .init();
         tcod::input::show_cursor(true);
 
+        let buffer = Offscreen::new(size.0 / char_size.0, size.1 / char_size.1);
+
         Self {
             root,
+            buffer,
             game_states: vec![MainMenu::game_state()],
             logger,
             config,
             data,
             previous_mouse: Mouse::default(),
+            game_data: GameData::new(),
         }
     }
 
@@ -112,12 +120,14 @@ impl Game {
             let input = self.handle_input();
             let mut game_ref = GameRef {
                 root: &mut self.root,
+                buffer: &mut self.buffer,
                 config: &self.config,
                 logger: &self.logger,
                 data: &mut self.data,
-                is_running: false,
                 game_state_level: current_game_state_length,
                 input,
+                game_data: &mut self.game_data,
+                background_update_messages: vec![],
             };
 
             if game_state_changed {
@@ -139,11 +149,15 @@ impl Game {
             let game_state_change = 'update: loop {
                 for i in 0..current_game_state_length {
                     if i != current_game_state_length - 1 {
-                        self.game_states
+                        if let Some(message) = self
+                            .game_states
                             .get_mut(i)
                             .unwrap()
                             .background_update(&mut game_ref)
-                            .context(GameStateError)?;
+                            .context(GameStateError)?
+                        {
+                            game_ref.background_update_messages.push(message);
+                        }
                     } else {
                         break 'update self
                             .game_states
@@ -305,10 +319,12 @@ impl From<Mouse> for MouseEvent {
 
 pub struct GameRef<'g> {
     pub root: &'g mut Root,
+    pub buffer: &'g mut Offscreen,
     pub config: &'g Config,
     pub logger: &'g slog::Logger,
     pub data: &'g mut Data,
-    pub is_running: bool,
     pub game_state_level: usize,
     pub input: Input,
+    pub game_data: &'g mut GameData,
+    pub background_update_messages: Vec<String>,
 }

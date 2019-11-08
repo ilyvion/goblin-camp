@@ -24,6 +24,8 @@ use std::fmt::{Display, Formatter, Result as FormatterResult};
 pub type GameStateError = Box<dyn std::error::Error>;
 pub type GameStateResult = std::result::Result<(), GameStateError>;
 pub type GameStateUpdateResult = std::result::Result<GameStateChange, GameStateError>;
+// TODO: Switch out String for enum?
+pub type GameStateBackgroundUpdateResult = std::result::Result<Option<String>, GameStateError>;
 
 pub enum GameStateChange {
     Replace(Box<dyn GameState>),
@@ -57,8 +59,8 @@ pub trait GameState {
     /// called. These are called in the order they are in the game state stack, from bottom to top.
 
     #[allow(unused_variables)]
-    fn background_update(&mut self, game_ref: &mut GameRef) -> GameStateResult {
-        Ok(())
+    fn background_update(&mut self, game_ref: &mut GameRef) -> GameStateBackgroundUpdateResult {
+        Ok(None)
     }
 
     /// Called once each game tick; used to update game state.

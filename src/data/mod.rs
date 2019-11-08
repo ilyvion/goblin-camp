@@ -29,7 +29,7 @@ use paths::{PathProvider, Paths};
 use random::DefaultGenerator;
 use settings::Settings;
 
-use crate::data::random::Generator;
+use rand::rngs::StdRng;
 use slog::{debug, o};
 use snafu::{ResultExt, Snafu};
 
@@ -42,7 +42,7 @@ pub enum DataError {
 pub type Result<T = (), E = DataError> = std::result::Result<T, E>;
 
 pub struct Data {
-    pub generator: Box<dyn Generator>,
+    pub generator: DefaultGenerator<StdRng>,
     pub paths: Paths,
     pub settings: Settings,
 }
@@ -62,7 +62,7 @@ impl Data {
         debug!(method_logger, "{:?}", settings);
 
         Ok(Self {
-            generator: Box::new(generator),
+            generator,
             paths,
             settings,
         })

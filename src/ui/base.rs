@@ -20,8 +20,9 @@
 
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as FormatResult};
-use std::ops::{Add, Sub};
+use std::ops::{Add, DivAssign, Sub};
 
+// TODO: Move out of UI; used many other places
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Position {
     pub x: i32,
@@ -33,6 +34,12 @@ impl Position {
 
     pub const fn new(x: i32, y: i32) -> Self {
         Self { x, y }
+    }
+}
+
+impl From<Position> for (i32, i32) {
+    fn from(p: Position) -> Self {
+        (p.x, p.y)
     }
 }
 
@@ -86,6 +93,14 @@ impl Add<(i32, i32)> for Position {
     }
 }
 
+impl DivAssign<i32> for Position {
+    fn div_assign(&mut self, rhs: i32) {
+        self.x /= rhs;
+        self.y /= rhs;
+    }
+}
+
+// TODO: Move out of UI; used many other places
 #[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct Size {
     pub width: i32,
@@ -95,6 +110,10 @@ pub struct Size {
 impl Size {
     pub const fn new(width: i32, height: i32) -> Self {
         Self { width, height }
+    }
+
+    pub fn area(&self) -> i32 {
+        self.width * self.height
     }
 }
 

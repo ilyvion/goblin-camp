@@ -17,9 +17,11 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+mod array2d;
 mod safe_console;
 pub mod tcod;
 
+pub use array2d::*;
 pub use safe_console::*;
 use std::mem;
 
@@ -65,5 +67,51 @@ pub fn find_largest_fit<T: PartialOrd + Copy>(value: &mut T, values: &[T]) {
     }
     if !value_set {
         *value = values[values.len() - 1];
+    }
+}
+
+/// Compares the values in a slice two at a time, and based on whether the left or the right value
+/// is bigger, puts `left_winner` or `right_winner` into the result vector. Should the values be the
+/// same, the `tie_breaker` decides who wins.
+/// `false` picks `left_winner` and `true` picks `right_winner`.
+pub fn compare_and_pick<T: PartialOrd, R: Copy, F: FnMut() -> bool>(
+    data: &[T],
+    left_winner: R,
+    right_winner: R,
+    mut tie_breaker: F,
+) -> Vec<R> {
+    let mut results = vec![];
+    for values in data.windows(2) {
+        if values[0] < values[1] {
+            results.push(right_winner);
+        } else if values[0] > values[1] {
+            results.push(left_winner);
+        } else if tie_breaker() {
+            results.push(right_winner);
+        } else {
+            results.push(left_winner);
+        }
+    }
+
+    results
+}
+
+pub fn dual_map<T: Copy, R, F: FnMut(T, T) -> R>(data: &[T], mut map: F) -> Vec<R> {
+    let mut results = vec![];
+    for values in data.windows(2) {
+        results.push(map(values[0], values[1]));
+    }
+
+    results
+}
+
+pub fn clamp<T: PartialOrd>(value: T, min: T, max: T) -> T {
+    assert!(min <= max);
+    if value < min {
+        min
+    } else if value > max {
+        max
+    } else {
+        value
     }
 }

@@ -370,3 +370,35 @@ impl<C: Console> SafeConsole for C {
         )
     }
 }
+
+impl<'a> dyn SafeConsole + 'a {
+    /// Because the `blit` function requires a `C: Console` as its destination, we cannot directly
+    /// blit into a `dyn SafeConsole`, but instead have to go via the concrete type. This sort of
+    /// breaks the abstraction, unfortunately, but what can you do?
+    ///
+    /// Not that it would be any better if it accepted `dyn Console`, because Rust doesn't have any
+    /// way of going from `dyn A` to `dyn B` except through the concrete `C` that implements both of
+    /// them, so we'd still have to break the abstraction.
+    fn get_console<C: Console + SafeConsole>(&mut self) -> &mut C {
+        unsafe { &mut *(self as *mut dyn SafeConsole as *mut C) }
+    }
+
+    pub fn blit<C: Console + SafeConsole, S: Console>(
+        &mut self,
+        source: &S,
+        source_rect: Rectangle,
+        dest_pos: Position,
+        foreground_alpha: f32,
+        background_alpha: f32,
+    ) {
+        tcod::console::blit(
+            source,
+            source_rect.position.into(),
+            source_rect.size.into(),
+            self.get_console::<C>(),
+            dest_pos.into(),
+            foreground_alpha,
+            background_alpha,
+        );
+    }
+}

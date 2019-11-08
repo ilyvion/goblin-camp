@@ -214,7 +214,10 @@ struct TilesetMetadata {
     #[serde(rename = "tileHeight")]
     tile_height: i32,
 
-    // TODO: If the deserializer can be made to handle ignored_any, we can remove this
+    // TODO: If the deserializer can be made to handle ignored_any, we can remove this.
+    //       Probably requires a rewrite of the deserializer, where deserializing things doesn't
+    //       rely on serde's `deserialize_xyz` calls. I.e. write Deserializers/Visitors for each
+    //       deserializable type.
     #[serde(rename = "texture")]
     _texture: Vec<Texture>,
 }

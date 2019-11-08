@@ -21,7 +21,22 @@
 use crate::coordinate::{Axis, Coordinate};
 use rand::rngs::StdRng;
 use rand::{Rng, RngCore, SeedableRng};
+use std::convert::TryInto;
 use std::time::SystemTime;
+use tcod::random::Algo;
+
+/// Trait used to provide all the possible values of an `enum`, which is then used by the
+/// [`auto_select`] method on the `Generator` to automatically provide a random value of said
+/// enum to the user.
+///
+/// [`auto_select`]: trait.Generator.html#method.auto_select
+pub trait Selection
+where
+    Self: Sized + Copy,
+{
+    /// Returns all the possible values of this type
+    fn get_choices() -> &'static [Self];
+}
 
 /// Represents the sign of a numeric value, either `Positive` or `Negative`.
 #[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Debug, Hash)]
@@ -43,7 +58,7 @@ pub trait Generator {
     ///
     /// # Panics
     /// * If `start > end`.
-    fn generate(&mut self, start: i32, end: i32) -> i32;
+    fn generate_integer(&mut self, start: i32, end: i32) -> i32;
 
     /// Generates a value between 0 and end, inclusive (\[0, end\]).
     ///
@@ -53,7 +68,9 @@ pub trait Generator {
     ///
     /// # Panics
     /// * If `end < 0`.
-    fn generate_up_to(&mut self, end: i32) -> i32;
+    fn generate_integer_up_to(&mut self, end: i32) -> i32 {
+        self.generate_integer(0, end)
+    }
 
     /// Generates a value between 0.0 and 1.0, inclusive (\[0.0, 1.0\]).
     fn generate_floating(&mut self) -> f64;
@@ -62,7 +79,13 @@ pub trait Generator {
     fn generate_bool(&mut self) -> bool;
 
     /// Generates a value of `Positive` or `Negative`.
-    fn generate_sign(&mut self) -> Sign;
+    fn generate_sign(&mut self) -> Sign {
+        if self.generate_bool() {
+            Sign::Positive
+        } else {
+            Sign::Negative
+        }
+    }
 
     /// Generates a coordinate inside the rectangular area delineated by `origin` and `extent`,
     /// excluding the coordinates `extent` itself, i.e. [origin, extent).
@@ -70,11 +93,18 @@ pub trait Generator {
         &mut self,
         origin: Coordinate,
         extent: Coordinate,
-    ) -> Coordinate;
+    ) -> Coordinate {
+        let mut res = origin;
+        Axis::both().for_each(|a| res[a] += self.generate_integer_up_to(extent[a] - 1));
+
+        res
+    }
 
     /// Generates a coordinate inside the rectangular area delineated by `(0, 0)` and `extent`,
     /// excluding the coordinates of and `extent` itself, i.e. [(0, 0), extent).
-    fn generate_coordinate_within_origin_extent(&mut self, extent: Coordinate) -> Coordinate;
+    fn generate_coordinate_within_origin_extent(&mut self, extent: Coordinate) -> Coordinate {
+        self.generate_coordinate_within_extent(Coordinate::ORIGIN, extent)
+    }
 
     /// Generates a coordinate which is up to `distance` away per axis from `origin`.
     ///
@@ -84,13 +114,20 @@ pub trait Generator {
         &mut self,
         origin: Coordinate,
         distance: i32,
-    ) -> Coordinate;
+    ) -> Coordinate {
+        let mut res = origin;
+        Axis::both().for_each(|a| res[a] += self.generate_integer(-distance, distance));
+
+        res
+    }
 
     /// Generates a coordinate which is up to `distance` away per axis from `(0, 0)`.
     ///
     /// # Panics
     /// * If `distance < 0`.
-    fn generate_coordinate_within_origin_distance(&mut self, distance: i32) -> Coordinate;
+    fn generate_coordinate_within_origin_distance(&mut self, distance: i32) -> Coordinate {
+        self.generate_coordinate_within_distance(Coordinate::ORIGIN, distance)
+    }
 
     /// Generates a coordinate inside a rectangle delineated by its `low` and `high` corners,
     /// both included.
@@ -98,7 +135,12 @@ pub trait Generator {
         &mut self,
         low: Coordinate,
         high: Coordinate,
-    ) -> Coordinate;
+    ) -> Coordinate {
+        let mut res = Coordinate::default();
+        Axis::both().for_each(|a| res[a] += self.generate_integer(low[a], high[a]));
+
+        res
+    }
 
     /// Returns a `Dice` based on this generator.
     ///
@@ -114,12 +156,98 @@ pub trait Generator {
     {
         Dice::new(self, faces, rolls, multiplier, offset)
     }
+
+    /// Returns a reference to a tcod [`Rng`], which should generally be seeded by the same seed
+    /// as the generator itself, if possible, or if not, a seed that is deterministically derived
+    /// from the generator's own seed.
+    ///
+    /// [`Rng`]: /tcod/random/struct.Rng.html
+    fn get_tcod_rng(&self) -> &tcod::random::Rng;
+}
+
+impl<'a> dyn Generator + 'a {
+    /// Given a slice of choices, this method selects one of them by random and returns it
+    pub fn select<T: Copy>(&mut self, choices: &[T]) -> T {
+        *self.select_by_ref(choices)
+    }
+
+    /// Given a slice of choices, this method selects one of them by random and returns it
+    /// by reference
+    pub fn select_by_ref<'c, T>(&mut self, choices: &'c [T]) -> &'c T {
+        let end: i32 = (choices.len() - 1)
+            .try_into()
+            .expect("Number of choices too large");
+        choices.get(self.generate_integer(0, end) as usize).unwrap()
+    }
+
+    /// To accommodate ease-of-use when it comes to picking an enum value by random, this method
+    /// in conjuction with the `Selection` trait makes that super easy to accomplish. First,
+    /// implement the `Selection` trait for your enum, which also has to implement `Copy`:
+    /// ```
+    /// use goblin_camp_revival::data::random::Selection;
+    ///
+    /// #[derive(Copy, Clone)]
+    /// pub enum Foo {
+    ///     Bar,
+    ///     Baz,
+    /// }
+    /// const FOO_VALUES: [Foo; 2] = [Foo::Bar, Foo::Baz];
+    /// impl Selection for Foo {
+    ///     fn get_choices() -> &'static [Self] {
+    ///         &FOO_VALUES
+    ///     }
+    /// }
+    /// ```
+    /// by doing this, you can now call `auto_select()` for any value that expects a `Foo`, and
+    /// it'll give you a random enum value:
+    /// ```
+    /// # use goblin_camp_revival::data::random::Selection;
+    /// #
+    /// # #[derive(Copy, Clone)]
+    /// # pub enum Foo {
+    /// #    Bar,
+    /// #    Baz,
+    /// # }
+    /// # const FOO_VALUES: [Foo; 2] = [Foo::Bar, Foo::Baz];
+    /// # impl Selection for Foo {
+    /// #    fn get_choices() -> &'static [Self] {
+    /// #        &FOO_VALUES
+    /// #    }
+    /// # }
+    /// #
+    /// use goblin_camp_revival::data::random::{DefaultGenerator, Generator};
+    ///
+    /// let mut default_generator = DefaultGenerator::default();
+    /// let generator: &mut dyn Generator = &mut default_generator;
+    /// let foo: Foo = generator.auto_select();
+    /// ```
+    pub fn auto_select<S: Selection + 'static>(&mut self) -> S
+    where
+        S: Copy,
+    {
+        self.select(S::get_choices())
+    }
+
+    /// Generates a `u8` using the [`generate`] method.
+    ///
+    /// [`generate`]: #method.generate
+    pub fn generate_u8(&mut self, start: u8, end: u8) -> u8 {
+        self.generate_integer(start as i32, end as i32) as u8
+    }
+
+    /// Generates a `u8` using the [`generate_up_to`] method.
+    ///
+    /// [`generate_up_to`]: #method.generate_up_to
+    pub fn generate_up_to_u8(&mut self, end: u8) -> u8 {
+        self.generate_integer_up_to(end as i32) as u8
+    }
 }
 
 /// A random number generator utility.
 pub struct DefaultGenerator<R: RngCore> {
     rng: R,
     seed: u64,
+    tcod_rng: tcod::random::Rng,
 }
 
 impl<S: RngCore + SeedableRng> DefaultGenerator<S> {
@@ -140,6 +268,11 @@ impl<S: RngCore + SeedableRng> DefaultGenerator<S> {
         Self {
             rng: S::seed_from_u64(seed),
             seed,
+            //
+            tcod_rng: tcod::random::Rng::new_with_seed(
+                Algo::CMWC,
+                (seed % (u64::from(std::u32::MAX) + 1)) as u32,
+            ),
         }
     }
 
@@ -152,6 +285,11 @@ impl<S: RngCore + SeedableRng> DefaultGenerator<S> {
     pub fn reseed(&mut self, seed: u64) {
         self.rng = S::seed_from_u64(seed);
         self.seed = seed;
+    }
+
+    /// Reseeds the generator with the default seed.
+    pub fn reseed_with_default(&mut self) {
+        self.reseed(Self::default_seed())
     }
 }
 
@@ -170,12 +308,8 @@ impl Default for DefaultGenerator<StdRng> {
 }
 
 impl<R: RngCore> Generator for DefaultGenerator<R> {
-    fn generate(&mut self, start: i32, end: i32) -> i32 {
+    fn generate_integer(&mut self, start: i32, end: i32) -> i32 {
         self.rng.gen_range(start, end + 1)
-    }
-
-    fn generate_up_to(&mut self, end: i32) -> i32 {
-        self.generate(0, end)
     }
 
     fn generate_floating(&mut self) -> f64 {
@@ -186,53 +320,8 @@ impl<R: RngCore> Generator for DefaultGenerator<R> {
         self.rng.gen()
     }
 
-    fn generate_sign(&mut self) -> Sign {
-        if self.generate_bool() {
-            Sign::Positive
-        } else {
-            Sign::Negative
-        }
-    }
-
-    fn generate_coordinate_within_extent(
-        &mut self,
-        origin: Coordinate,
-        extent: Coordinate,
-    ) -> Coordinate {
-        let mut res = origin;
-        Axis::both().for_each(|a| res[a] += self.generate_up_to(extent[a] - 1));
-
-        res
-    }
-
-    fn generate_coordinate_within_origin_extent(&mut self, extent: Coordinate) -> Coordinate {
-        self.generate_coordinate_within_extent(Coordinate::ORIGIN, extent)
-    }
-
-    fn generate_coordinate_within_distance(
-        &mut self,
-        origin: Coordinate,
-        distance: i32,
-    ) -> Coordinate {
-        let mut res = origin;
-        Axis::both().for_each(|a| res[a] += self.generate(-distance, distance));
-
-        res
-    }
-
-    fn generate_coordinate_within_origin_distance(&mut self, distance: i32) -> Coordinate {
-        self.generate_coordinate_within_distance(Coordinate::ORIGIN, distance)
-    }
-
-    fn generate_coordinate_within_rectangle(
-        &mut self,
-        low: Coordinate,
-        high: Coordinate,
-    ) -> Coordinate {
-        let mut res = Coordinate::default();
-        Axis::both().for_each(|a| res[a] += self.generate(low[a], high[a]));
-
-        res
+    fn get_tcod_rng(&self) -> &tcod::random::Rng {
+        &self.tcod_rng
     }
 }
 
@@ -278,7 +367,7 @@ impl<'g, G: Generator> Dice<'g, G> {
     /// ```
     pub fn roll(&mut self) -> u32 {
         let result = (0..self.rolls).fold(0, |r, _| {
-            r + self.generator.generate(1, self.faces.max(1) as i32)
+            r + self.generator.generate_integer(1, self.faces.max(1) as i32)
         });
 
         (f64::from(result) * self.multiplier + self.offset).round() as u32
@@ -315,21 +404,21 @@ impl<'g, G: Generator> Dice<'g, G> {
 /// situations that uses a [`Generator`].
 ///
 /// [`Generator`]: trait.Generator.html
-pub struct StaticGenerator(());
+pub struct StaticGenerator(tcod::random::Rng);
 
 impl Default for StaticGenerator {
     /// Creates a new static generator.
     fn default() -> Self {
-        Self(())
+        Self(tcod::random::Rng::new_with_seed(Algo::CMWC, 0))
     }
 }
 
 impl Generator for StaticGenerator {
-    fn generate(&mut self, start: i32, _: i32) -> i32 {
+    fn generate_integer(&mut self, start: i32, _: i32) -> i32 {
         start
     }
 
-    fn generate_up_to(&mut self, end: i32) -> i32 {
+    fn generate_integer_up_to(&mut self, end: i32) -> i32 {
         end
     }
 
@@ -375,5 +464,9 @@ impl Generator for StaticGenerator {
         high: Coordinate,
     ) -> Coordinate {
         low + high
+    }
+
+    fn get_tcod_rng(&self) -> &tcod::random::Rng {
+        &self.0
     }
 }
