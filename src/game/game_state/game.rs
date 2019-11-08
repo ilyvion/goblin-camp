@@ -21,7 +21,7 @@
 pub mod loading_dialog;
 
 use crate::data::base::{Position, Size};
-use crate::game::game_data::{MapGenerationState, MapRenderData};
+use crate::game::game_data::{Camera, MapGenerationState, MapRenderData};
 use crate::game::game_state::game::loading_dialog::LoadingDialog;
 use crate::game::game_state::{
     GameState, GameStateBackgroundUpdateResult, GameStateChange, GameStateError, GameStateResult,
@@ -71,7 +71,7 @@ pub struct Game {
     logger: slog::Logger,
     first_run: bool,
     map_generation_state: Option<MapGenerationState>,
-    camera: Position,
+    camera: Camera,
 }
 
 impl Game {
@@ -80,7 +80,7 @@ impl Game {
             logger: parent_logger.new(o!()),
             first_run: true,
             map_generation_state: None,
-            camera: Position::ORIGIN + (110, 75),
+            camera: Camera::new(),
         }))
     }
 }
@@ -253,6 +253,8 @@ impl GameState for Game {
                 Script::Event::GameEnd();
             */
 
+            self.camera.update(game_ref);
+
             Ok(GameStateChange::None)
         }
     }
@@ -265,7 +267,7 @@ impl GameState for Game {
         let (char_x, char_y) = tcod::system::get_char_size();
 
         let render_data = MapRenderData::new(
-            self.camera,
+            &self.camera,
             Position::new(0, 0) + Size::new(size_x * char_x, size_y * char_y),
             game_ref.root,
         );

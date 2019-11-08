@@ -25,6 +25,7 @@ mod weather;
 use crate::coordinate::{Coordinate, Direction};
 use crate::data::base::{Position, Rectangle, Size};
 use crate::data::random::Generator;
+use crate::game::game_data::camera::Camera;
 use crate::game::game_data::construction::Construction;
 use crate::game::game_data::filth_node::FilthNode;
 use crate::game::game_data::water_node::WaterNode;
@@ -222,8 +223,8 @@ impl Map {
         render_data.viewport.size.height /= char_y;
 
         let up_left = Coordinate::new(
-            render_data.focus.x - (render_data.viewport.size.width / 2),
-            render_data.focus.y - (render_data.viewport.size.height / 2),
+            render_data.camera.x() as i32 - (render_data.viewport.size.width / 2),
+            render_data.camera.y() as i32 - (render_data.viewport.size.height / 2),
         );
 
         //let (screen_delta_x, screen_delta_y) = up_left.into();
@@ -470,15 +471,15 @@ impl Map {
 }
 
 pub struct MapRenderData<'m> {
-    focus: Position,
+    camera: &'m Camera,
     viewport: Rectangle,
     console: &'m mut dyn SafeConsole,
 }
 
 impl<'m> MapRenderData<'m> {
-    pub fn new(focus: Position, viewport: Rectangle, console: &'m mut dyn SafeConsole) -> Self {
+    pub fn new(camera: &'m Camera, viewport: Rectangle, console: &'m mut dyn SafeConsole) -> Self {
         Self {
-            focus,
+            camera,
             viewport,
             console,
         }

@@ -257,13 +257,18 @@ impl Game {
 
     pub fn handle_input(&mut self) -> Input {
         let mut raw_events = vec![];
-        let mut key_event = None;
+        let mut key_release_event = None;
+        let mut key_press_event = None;
         let mut mouse_event = None;
         for (flags, event) in tcod::input::events() {
             raw_events.push(event);
-            if flags.intersects(input::KEY_RELEASE) && key_event.is_none() {
+            if flags.intersects(input::KEY_RELEASE) && key_release_event.is_none() {
                 if let input::Event::Key(key) = event {
-                    key_event = Some(KeyEvent { raw: key });
+                    key_release_event = Some(KeyEvent { raw: key });
+                }
+            } else if flags.intersects(input::KEY_PRESS) && key_press_event.is_none() {
+                if let input::Event::Key(key) = event {
+                    key_press_event = Some(KeyEvent { raw: key });
                 }
             } else if flags.intersects(input::MOUSE) && mouse_event.is_none() {
                 if let input::Event::Mouse(mouse) = event {
@@ -280,7 +285,8 @@ impl Game {
 
         Input {
             raw_events,
-            key_event: key_event.unwrap_or_default(),
+            press_key_event: key_press_event.unwrap_or_default(),
+            release_key_event: key_release_event.unwrap_or_default(),
             mouse_event: mouse_event.unwrap_or_else(|| self.previous_mouse.into()),
         }
     }
@@ -289,7 +295,8 @@ impl Game {
 #[derive(Clone)]
 pub struct Input {
     pub raw_events: Vec<input::Event>,
-    pub key_event: KeyEvent,
+    pub press_key_event: KeyEvent,
+    pub release_key_event: KeyEvent,
     pub mouse_event: MouseEvent,
 }
 

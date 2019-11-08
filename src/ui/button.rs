@@ -90,7 +90,7 @@ impl Drawable for Button {
 
     fn update(&mut self, relative_position: Position, input: Input) -> UpdateResult {
         if let Some(shortcut) = self.shortcut {
-            if input.key_event.raw.printable == shortcut {
+            if input.release_key_event.raw.printable == shortcut {
                 // TODO: Also support keycode?
                 return UpdateResult::new(
                     HitResult::Hit,

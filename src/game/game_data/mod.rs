@@ -23,19 +23,21 @@ mod filth_node;
 mod map;
 mod water_node;
 
+mod camera;
+
 use crate::coordinate::{Coordinate, Direction};
 use crate::data::random::Generator;
 use crate::data::settings::Settings;
 use crate::game::game_data::filth_node::FilthNode;
 use crate::game::game_data::map::{Map, MapExtentHelper, TileType};
 use crate::game::game_data::water_node::WaterNode;
-use crate::util::SafeConsole;
+pub use camera::Camera;
 pub use map::MapRenderData;
 use tcod::line::Line;
 
 pub struct GameData {
     pub running: bool,
-    map: Map,
+    pub map: Map,
     /*
     int screenWidth, screenHeight;
     Season season;

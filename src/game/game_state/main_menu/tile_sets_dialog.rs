@@ -127,7 +127,7 @@ impl GameState for TileSetsDialog {
     }
 
     fn update(&mut self, game_ref: &mut GameRef) -> GameStateUpdateResult {
-        if game_ref.input.key_event.raw.code == KeyCode::Escape {
+        if game_ref.input.release_key_event.raw.code == KeyCode::Escape {
             game_ref.data.settings.tile_set = self.original_tile_set.take();
             return Ok(GameStateChange::Pop);
         }

@@ -104,13 +104,13 @@ impl GameState for SettingsDialog {
     }
 
     fn update(&mut self, game_ref: &mut GameRef) -> GameStateUpdateResult {
-        if game_ref.input.key_event.raw.code == KeyCode::Escape {
+        if game_ref.input.release_key_event.raw.code == KeyCode::Escape {
             game_ref
                 .data
                 .settings
                 .restore_from(self.original_settings.take().unwrap());
             return Ok(GameStateChange::Pop);
-        } else if game_ref.input.key_event.raw.code == KeyCode::Enter {
+        } else if game_ref.input.release_key_event.raw.code == KeyCode::Enter {
             if self.fields[0].invalid || self.fields[1].invalid {
                 self.message_box = true;
                 return Ok(GameStateChange::Push(MessageBox::game_state(
@@ -129,8 +129,8 @@ impl GameState for SettingsDialog {
             let field_value = &mut self.fields[self.focused_field].value;
             let field_invalid = &mut self.fields[self.focused_field].invalid;
 
-            let key = game_ref.input.key_event.raw.printable;
-            let code = game_ref.input.key_event.raw.code;
+            let key = game_ref.input.release_key_event.raw.printable;
+            let code = game_ref.input.release_key_event.raw.code;
             let mut field_updated = false;
             if key >= '0' && key <= '9' && field_value.len() < (Self::WIDTH - 7) as usize {
                 field_value.push(key);

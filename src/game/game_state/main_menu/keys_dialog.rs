@@ -108,13 +108,13 @@ impl GameState for KeysDialog {
     }
 
     fn update(&mut self, game_ref: &mut GameRef) -> GameStateUpdateResult {
-        if game_ref.input.key_event.raw.code == KeyCode::Escape {
+        if game_ref.input.release_key_event.raw.code == KeyCode::Escape {
             game_ref
                 .data
                 .settings
                 .restore_from(self.original_settings.take().unwrap());
             return Ok(GameStateChange::Pop);
-        } else if game_ref.input.key_event.raw.code == KeyCode::Enter {
+        } else if game_ref.input.release_key_event.raw.code == KeyCode::Enter {
             if self.fields.iter().any(|f| f.conflict) {
                 self.message_box = true;
                 return Ok(GameStateChange::Push(MessageBox::game_state(
@@ -132,7 +132,7 @@ impl GameState for KeysDialog {
         } else {
             let field = &mut self.fields[self.focused_field];
 
-            let key = game_ref.input.key_event.raw.printable;
+            let key = game_ref.input.release_key_event.raw.printable;
             if key >= ' ' && key <= '~' {
                 field.update_value(key);
                 game_ref
