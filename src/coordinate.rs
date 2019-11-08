@@ -18,8 +18,8 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::data::base::{Position, Size};
 use crate::data::random::Selection;
-use crate::ui::{Position, Size};
 use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Display;

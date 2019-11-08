@@ -18,7 +18,6 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-mod base;
 mod button;
 mod checkbox;
 mod dialog;
@@ -30,7 +29,6 @@ mod textbox;
 mod ui_container;
 pub mod update_result;
 
-pub use base::*;
 pub use button::*;
 pub use checkbox::*;
 pub use dialog::*;

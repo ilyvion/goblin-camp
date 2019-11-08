@@ -18,6 +18,7 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+pub mod base;
 #[allow(clippy::module_inception)]
 pub mod data;
 pub mod paths;

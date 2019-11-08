@@ -18,7 +18,7 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::ui::Size;
+use crate::data::base::Size;
 use crate::util::find_largest_fit;
 use serde_derive::{Deserialize, Serialize};
 use snafu::{ResultExt, Snafu};

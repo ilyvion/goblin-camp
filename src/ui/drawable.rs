@@ -17,9 +17,9 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::data::base::{Position, Size};
 use crate::game::Input;
 use crate::ui::update_result::{HitResult, UpdateResult};
-use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
 
 pub trait Positioned {
@@ -41,13 +41,13 @@ macro_rules! drawable_prerequisites_impl {
     };
     ($ty:ident < $( $N:ident $(: $b0:ident $(+$b:ident)* )? ),* > $(, $delegate:ident)?) => {
         impl< $( $N $(: $b0 $(+$b)* )? ),* > $crate::ui::drawable::Positioned for $ty< $( $N ),* > {
-            fn position(&self) -> $crate::ui::Position {
+            fn position(&self) -> $crate::data::base::Position {
                 self $(.$delegate)?.position
             }
         }
 
         impl< $( $N $(: $b0 $(+$b)* )? ),* > $crate::ui::drawable::Sized for $ty< $( $N ),* > {
-            fn size(&self) -> $crate::ui::Size {
+            fn size(&self) -> $crate::data::base::Size {
                 self $(.$delegate)?.size
             }
         }

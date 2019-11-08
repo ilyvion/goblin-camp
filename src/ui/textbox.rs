@@ -18,8 +18,8 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::data::base::{Position, Size};
 use crate::ui::drawable::Drawable;
-use crate::ui::{Position, Size};
 use crate::util::SafeConsole;
 use crate::{drawable_prerequisites_impl, indexed_original_impl};
 use tcod::{colors, BackgroundFlag};

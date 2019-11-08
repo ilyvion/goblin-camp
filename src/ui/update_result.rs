@@ -18,7 +18,7 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::ui::Position;
+use crate::data::base::Position;
 use std::any::Any;
 
 #[derive(Eq, PartialEq)]

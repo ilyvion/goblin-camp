@@ -1,5 +1,4 @@
 /*
-    Copyright 2010-2011 Ilkka Halila
     Copyright 2019 Alexander Krivács Schrøder
 
     This file is part of Goblin Camp Revival.
@@ -22,7 +21,6 @@ use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as FormatResult};
 use std::ops::{Add, DivAssign, Sub};
 
-// TODO: Move out of UI; used many other places
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Position {
     pub x: i32,
@@ -100,7 +98,6 @@ impl DivAssign<i32> for Position {
     }
 }
 
-// TODO: Move out of UI; used many other places
 #[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct Size {
     pub width: i32,

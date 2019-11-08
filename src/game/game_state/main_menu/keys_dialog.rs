@@ -18,11 +18,12 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::data::base::{Position, Size};
 use crate::data::paths::PathProvider;
 use crate::data::settings::Settings;
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult, GameStateUpdateResult};
 use crate::game::GameRef;
-use crate::ui::{MessageBox, Position, Size};
+use crate::ui::MessageBox;
 use crate::util::SafeConsole;
 use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;

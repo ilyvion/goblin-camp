@@ -20,6 +20,7 @@
 
 pub mod loading_dialog;
 
+use crate::data::base::{Position, Size};
 use crate::game::game_data::{MapGenerationState, MapRenderData};
 use crate::game::game_state::game::loading_dialog::LoadingDialog;
 use crate::game::game_state::{
@@ -27,7 +28,7 @@ use crate::game::game_state::{
     GameStateUpdateResult,
 };
 use crate::game::GameRef;
-use crate::ui::{MessageBox, Position, Rectangle, Size};
+use crate::ui::MessageBox;
 use slog::o;
 use std::borrow::Cow;
 use tcod::{BackgroundFlag, Console};

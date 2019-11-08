@@ -18,7 +18,8 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use super::{Position, Size, UiContainer};
+use super::UiContainer;
+use crate::data::base::{Position, Size};
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult, GameStateUpdateResult};
 use crate::game::GameRef;
 use crate::ui::drawable::Drawable;

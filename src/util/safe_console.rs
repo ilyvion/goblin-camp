@@ -17,7 +17,7 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::ui::{Position, Rectangle};
+use crate::data::base::{Position, Rectangle};
 use tcod::{BackgroundFlag, Color, Console, TextAlignment};
 
 /// Re-implements the `Console` trait from `tcod`, but makes every method object-safe so they can be

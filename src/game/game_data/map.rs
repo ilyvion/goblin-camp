@@ -23,11 +23,11 @@ mod tile;
 mod weather;
 
 use crate::coordinate::{Coordinate, Direction};
+use crate::data::base::{Position, Rectangle, Size};
 use crate::data::random::Generator;
 use crate::game::game_data::construction::Construction;
 use crate::game::game_data::filth_node::FilthNode;
 use crate::game::game_data::water_node::WaterNode;
-use crate::ui::{Position, Rectangle, Size};
 use crate::util::extras::Array2DCoordinateAccessor;
 use crate::util::tcod::Chars;
 use crate::util::{compare_and_pick, dual_map, Array2D, SafeConsole};

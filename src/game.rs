@@ -18,11 +18,11 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::data::base::Position;
 use crate::data::Data;
 use crate::game::game_data::GameData;
 use crate::game::game_state::main_menu::MainMenu;
 use crate::game::game_state::{GameState, GameStateChange};
-use crate::ui::Position;
 use crate::Config;
 use slog::{debug, o, trace};
 use snafu::{ResultExt, Snafu};
@@ -169,15 +169,15 @@ impl Game {
                 }
             };
 
-//            // Iterator based alternative. Not much better...
-//            let game_state_change = self.game_states.iter_mut().enumerate().map(|(i, state)| {
-//                if i != current_game_state_length - 1 {
-//                    state.background_update(&mut game_ref).context(GameStateError)?;
-//                    Ok(None)
-//                } else {
-//                    Ok(Some(state.update(&mut game_ref).context(GameStateError)?))
-//                }
-//            } ).collect::<Result<Vec<_>, _>>()?.into_iter().filter_map(|o| o).next().unwrap();
+            //            // Iterator based alternative. Not much better...
+            //            let game_state_change = self.game_states.iter_mut().enumerate().map(|(i, state)| {
+            //                if i != current_game_state_length - 1 {
+            //                    state.background_update(&mut game_ref).context(GameStateError)?;
+            //                    Ok(None)
+            //                } else {
+            //                    Ok(Some(state.update(&mut game_ref).context(GameStateError)?))
+            //                }
+            //            } ).collect::<Result<Vec<_>, _>>()?.into_iter().filter_map(|o| o).next().unwrap();
 
             game_ref.root.set_default_background(colors::BLACK);
             game_ref.root.set_default_foreground(colors::WHITE);

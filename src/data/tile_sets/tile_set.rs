@@ -18,7 +18,7 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::ui::Size;
+use crate::data::base::Size;
 use std::borrow::Cow;
 use std::path::Path;
 

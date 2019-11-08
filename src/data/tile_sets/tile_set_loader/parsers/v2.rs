@@ -18,9 +18,9 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::data::base::Size;
 use crate::data::tile_sets::tile_set::TilesetMetadata as TilesetMetadataTrait;
 use crate::data::tile_sets::tile_set_loader::parsers::{Error, Io, Parser, TileSetParser};
-use crate::ui::Size;
 use serde_derive::Deserialize;
 use serde_tcod_config_parser::de::Deserializer;
 use snafu::ResultExt;
