@@ -21,7 +21,7 @@
 use crate::coordinate::Coordinate;
 use crate::data::random::Generator;
 use crate::game::game_data::filth_node::FilthNode;
-use crate::game::game_data::map::MapDrawable;
+use crate::game::game_data::map::MapGraphicDrawable;
 use crate::util::tcod::Chars;
 use tcod::Color;
 
@@ -128,7 +128,7 @@ impl WaterNode {
     }
 }
 
-impl MapDrawable for WaterNode {
+impl MapGraphicDrawable for WaterNode {
     fn graphic(&self) -> char {
         self.graphic
     }

@@ -2,3 +2,4 @@
 * Extract UI components out into separate crate.
 * Go through depended on libraries and make sure proper attribution is shown/printed in the relevant places.
 * Add support for manually setting a seed for map generation
+* For better performance, consider storing certain data sequentially instead of in struct/object form

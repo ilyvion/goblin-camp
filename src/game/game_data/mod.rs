@@ -19,6 +19,7 @@
 */
 
 mod construction;
+mod entity;
 mod filth_node;
 mod map;
 mod water_node;
@@ -60,9 +61,6 @@ pub struct GameData {
     boost::shared_ptr<MapRenderer> renderer;
     bool gameOver;
 
-    std::map<int, boost::shared_ptr<Construction> > staticConstructionList;
-    std::map<int, boost::shared_ptr<Construction> > dynamicConstructionList;
-    std::map<int, boost::shared_ptr<NPC> > npcList;
 
     static bool initializedOnce;
 
@@ -73,18 +71,8 @@ pub struct GameData {
     std::map<std::string, boost::shared_ptr<Squad> > squadList;
     std::list<boost::shared_ptr<Squad> > hostileSquadList;
 
-    std::map<int,boost::shared_ptr<Item> > itemList;
-
-    std::map<int, boost::shared_ptr<NatureObject> > natureList;
-    std::list<boost::weak_ptr<WaterNode> > waterList;
-
-    std::list<boost::weak_ptr<FilthNode> > filthList;
-
     std::list<boost::weak_ptr<BloodNode> > bloodList;
 
-    std::list<boost::weak_ptr<FireNode> > fireList;
-
-    std::list<boost::shared_ptr<Spell> > spellList;
     */
 }
 

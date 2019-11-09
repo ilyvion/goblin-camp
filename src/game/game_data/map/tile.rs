@@ -22,20 +22,22 @@ use crate::coordinate::Direction;
 use crate::data::random::Generator;
 use crate::game::game_data::construction::{Construction, ConstructionTag};
 use crate::game::game_data::filth_node::FilthNode;
-use crate::game::game_data::map::MapDrawable;
+use crate::game::game_data::map::MapGraphicDrawable;
 use crate::game::game_data::water_node::WaterNode;
+use derivative::Derivative;
 use std::cell::RefCell;
 use std::rc::Rc;
 use tcod::Color;
 
-#[derive(Default, Clone)]
+#[derive(Clone, Derivative)]
+#[derivative(Default)]
 pub struct Tile {
     tile_type: TileType,
     vis: bool,
     walkable: bool,
     buildable: bool,
     move_cost: i32,
-    pub construction: i32,
+    pub construction: isize,
     low: bool,
     blocks_water: bool,
     pub water: Option<Rc<RefCell<WaterNode>>>,
@@ -43,17 +45,18 @@ pub struct Tile {
     fore_color: Color,
     original_fore_color: Color,
     back_color: Color,
-    pub nature_object: i32,
+    #[derivative(Default(value = "-1"))]
+    pub nature_object_ref: isize,
     //std::set<int> npcList; //Set of NPC uid's
     //std::set<int> itemList; //Set of Item uid's
-    pub(crate) filth: Option<FilthNode>,
+    pub filth: Option<FilthNode>,
     //boost::shared_ptr<FilthNode> filth;
     //boost::shared_ptr<BloodNode> blood;
     //boost::shared_ptr<FireNode> fire;
     marked: bool,
     pub walked_over: i32,
     pub corruption: i32,
-    territory: bool,
+    pub territory: bool,
     pub burnt: i32,
     pub flow: Direction,
 }
@@ -200,7 +203,7 @@ impl Tile {
     }
 }
 
-impl MapDrawable for Tile {
+impl MapGraphicDrawable for Tile {
     fn graphic(&self) -> char {
         self.graphic
     }

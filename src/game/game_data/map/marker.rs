@@ -22,21 +22,43 @@ use crate::coordinate::Coordinate;
 use crate::game::game_data::map::MapGraphicDrawable;
 use tcod::Color;
 
-#[derive(Debug, Copy, Clone, Default)]
-pub struct FilthNode {
-    pos: Coordinate,
-    depth: i32,
-    graphic: char,
+pub enum MarkerType {
+    Flashing,
+}
+
+pub struct MapMarker {
+    marker_type: MarkerType,
     color: Color,
+    original_color: Color,
+    duration: i32,
+    graphic: char,
+    pub pos: Coordinate,
+    counter: f32,
+    /*
+
+    class MapMarker {
+        GC_SERIALIZABLE_CLASS
+
+        MarkerType type;
+        TCODColor origColor, color;
+        int duration;
+        int graphic;
+        int x, y; //TODO switch to Coordinate
+        float counter;
+    public:
+        MapMarker(MarkerType=FLASHINGMARKER, int graphic='?', Coordinate position=Coordinate(0,0),
+            int duration=1, TCODColor color=TCODColor::pink);
+        bool Update();
+        int X() const;
+        int Y() const;
+        Coordinate Position() const;
+        int Graphic() const;
+        TCODColor Color() const;
+    };
+        */
 }
 
-impl FilthNode {
-    pub fn depth(&self) -> i32 {
-        self.depth
-    }
-}
-
-impl MapGraphicDrawable for FilthNode {
+impl MapGraphicDrawable for MapMarker {
     fn graphic(&self) -> char {
         self.graphic
     }

@@ -19,41 +19,19 @@
 */
 
 use crate::coordinate::Coordinate;
-use crate::data::base::Position;
-use crate::game::game_data::map::MapDrawable;
-use crate::util::SafeConsole;
-use tcod::Color;
 
-pub enum ConstructionTag {
-    Stockpile,
-    FarmPlot,
-    Door,
-    Wall,
-    Bed,
-    Workshop,
-    Furniture,
-    CenterScamp,
-    SpawningPool,
-    Bridge,
-    Trap,
-    RangedAdvantage,
-    Permanent,
-}
-
-pub struct Construction {}
-
-impl Construction {
-    pub fn has_tag(&self, tag: ConstructionTag) -> bool {
-        unimplemented!()
-    }
-
-    pub fn get_move_speed_modifier(&self) -> i32 {
-        unimplemented!()
-    }
-}
-
-impl MapDrawable for Construction {
-    fn draw<P: Into<Position>>(&self, console: &mut dyn SafeConsole, p: P) {
-        unimplemented!()
-    }
+pub struct Entity {
+    pos: Coordinate,
+    uid: i32,
+    zone: i32,
+    reserved: bool,
+    name: String,
+    faction: i32,
+    velocity: i32,
+    next_velocity_move: i32,
+    velocity_target: Coordinate,
+    // std::list<FlightPath> flightPath;
+    bulk: i32,
+    strobe: f32,
+    // static int uids;
 }

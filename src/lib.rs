@@ -25,8 +25,8 @@
 #![deny(unused_mut)]
 #![deny(bare_trait_objects)]
 #![deny(ellipsis_inclusive_range_patterns)]
-
 //#![warn(missing_docs)]
+#![allow(clippy::new_without_default)]
 
 pub mod coordinate;
 pub mod data;
@@ -36,6 +36,7 @@ pub mod util;
 
 use clap::ArgMatches;
 
+// TODO: Most of these won't make sense in this version. Consider removing most of them.
 #[derive(Clone, Debug)]
 pub struct Config {
     boot_test: bool,

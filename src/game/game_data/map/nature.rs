@@ -18,42 +18,38 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::coordinate::Coordinate;
-use crate::data::base::Position;
-use crate::game::game_data::map::MapDrawable;
-use crate::util::SafeConsole;
-use tcod::Color;
+use crate::game::game_data::entity::Entity;
+use crate::game::game_data::map::MapGraphicDrawable;
+use tcod::{colors, Color};
 
-pub enum ConstructionTag {
-    Stockpile,
-    FarmPlot,
-    Door,
-    Wall,
-    Bed,
-    Workshop,
-    Furniture,
-    CenterScamp,
-    SpawningPool,
-    Bridge,
-    Trap,
-    RangedAdvantage,
-    Permanent,
+pub struct NatureObject {
+    entity: Entity,
+
+    nature_object_type: i32,
+    graphic: char,
+    color: Color,
+    marked: bool,
+    condition: i32,
+    tree: bool,
+    harvestable: bool,
+    ice: bool,
+    // static std::vector<NatureObjectPreset> Presets;
 }
 
-pub struct Construction {}
-
-impl Construction {
-    pub fn has_tag(&self, tag: ConstructionTag) -> bool {
-        unimplemented!()
+impl MapGraphicDrawable for NatureObject {
+    fn graphic(&self) -> char {
+        self.graphic
     }
 
-    pub fn get_move_speed_modifier(&self) -> i32 {
-        unimplemented!()
+    fn fore_color(&self) -> Color {
+        self.color
     }
-}
 
-impl MapDrawable for Construction {
-    fn draw<P: Into<Position>>(&self, console: &mut dyn SafeConsole, p: P) {
-        unimplemented!()
+    fn back_color(&self) -> Color {
+        if self.marked {
+            colors::WHITE
+        } else {
+            colors::BLACK
+        }
     }
 }

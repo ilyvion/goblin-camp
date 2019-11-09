@@ -29,7 +29,7 @@ use crate::game::game_state::{
 };
 use crate::game::GameRef;
 use crate::ui::MessageBox;
-use slog::o;
+use slog::{info, o};
 use std::borrow::Cow;
 use tcod::{BackgroundFlag, Console};
 
@@ -77,7 +77,7 @@ pub struct Game {
 impl Game {
     pub fn game_state_change(parent_logger: slog::Logger) -> GameStateChange {
         GameStateChange::Push(Box::new(Game {
-            logger: parent_logger.new(o!()),
+            logger: parent_logger.new(o!("GameState" => "Game")),
             first_run: true,
             map_generation_state: None,
             camera: Camera::new(),
@@ -93,7 +93,14 @@ impl GameState for Game {
     fn background_update(&mut self, game_ref: &mut GameRef) -> GameStateBackgroundUpdateResult {
         if self.first_run {
             if self.map_generation_state.is_none() {
+                let method_logger = self.logger.new(o!("Method" => "Game::background_update"));
+
                 game_ref.data.generator.reseed_with_default();
+                info!(
+                    method_logger,
+                    "Starting new game with seed: {}",
+                    game_ref.data.generator.seed()
+                );
                 game_ref.game_data.reset();
                 self.map_generation_state = game_ref.game_data.generate_map(
                     &mut game_ref.data.generator,
@@ -113,7 +120,7 @@ impl GameState for Game {
                 Ok(None)
             } else {
                 self.first_run = false;
-                self.map_generation_state.take();
+                self.map_generation_state = None;
 
                 Ok(Some("DoneLoading".to_string()))
             }
@@ -274,17 +281,10 @@ impl GameState for Game {
 
         game_ref.game_data.render_map(render_data);
 
-        /*
-            TCODConsole * console = Game::Inst()->buffer,
-            float focusX = Game::Inst()->camX, float focusY = Game::Inst()->camY,
-            bool drawUI = true, int posX = 0, int posY = 0, int xSize = -1, int ySize = -1
-            console->setBackgroundFlag(TCOD_BKGND_SET);
-            renderer->DrawMap(Map::Inst(), focusX, focusY, posX * charX, posY * charY, sizeX * charX, sizeY * charY);
-
-            if (drawUI) {
-                UI::Inst()->Draw(console);
-            }
-        */
+        // TODO:
+        //       if (drawUI) {
+        //           UI::Inst()->Draw(console);
+        //       }
 
         Ok(())
     }

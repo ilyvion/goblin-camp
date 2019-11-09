@@ -18,42 +18,19 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::coordinate::Coordinate;
-use crate::data::base::Position;
-use crate::game::game_data::map::MapDrawable;
-use crate::util::SafeConsole;
+use crate::game::game_data::map::MapGraphicDrawable;
 use tcod::Color;
 
-pub enum ConstructionTag {
-    Stockpile,
-    FarmPlot,
-    Door,
-    Wall,
-    Bed,
-    Workshop,
-    Furniture,
-    CenterScamp,
-    SpawningPool,
-    Bridge,
-    Trap,
-    RangedAdvantage,
-    Permanent,
-}
+pub struct Item {}
 
-pub struct Construction {}
+impl Item {}
 
-impl Construction {
-    pub fn has_tag(&self, tag: ConstructionTag) -> bool {
+impl MapGraphicDrawable for Item {
+    fn graphic(&self) -> char {
         unimplemented!()
     }
 
-    pub fn get_move_speed_modifier(&self) -> i32 {
-        unimplemented!()
-    }
-}
-
-impl MapDrawable for Construction {
-    fn draw<P: Into<Position>>(&self, console: &mut dyn SafeConsole, p: P) {
+    fn fore_color(&self) -> Color {
         unimplemented!()
     }
 }

@@ -19,8 +19,23 @@
 */
 use tcod::heightmap::HeightMap;
 
+mod fire;
+mod item;
+mod marker;
+mod nature;
+mod npc;
+mod spell;
 mod tile;
 mod weather;
+
+pub use fire::*;
+pub use item::*;
+pub use marker::*;
+pub use nature::*;
+pub use npc::*;
+pub use spell::*;
+pub use tile::*;
+pub use weather::*;
 
 use crate::coordinate::{Coordinate, Direction};
 use crate::data::base::{Position, Rectangle, Size};
@@ -28,19 +43,19 @@ use crate::data::random::Generator;
 use crate::game::game_data::camera::Camera;
 use crate::game::game_data::construction::Construction;
 use crate::game::game_data::filth_node::FilthNode;
+use crate::game::game_data::map::nature::NatureObject;
 use crate::game::game_data::water_node::WaterNode;
 use crate::util::extras::Array2DCoordinateAccessor;
 use crate::util::tcod::Chars;
 use crate::util::{compare_and_pick, dual_map, Array2D, SafeConsole};
 use itertools::iproduct;
+use shrinkwraprs::Shrinkwrap;
 use std::cell::{Ref, RefCell, RefMut};
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::rc::Rc;
 use tcod::console::Offscreen;
-use tcod::{colors, Color};
-pub use tile::*;
-pub use weather::*;
+use tcod::{colors, BackgroundFlag, Color};
 
 const HARDCODED_WIDTH: usize = 500;
 const HARDCODED_HEIGHT: usize = 500;
@@ -51,7 +66,7 @@ pub struct Map {
     cached_tile_map: Array2D<CacheTile>,
     pub extent: Size,
     pub water_level: f32,
-    overlay_flags: i32,
+    overlays: Vec<Overlay>,
     // TODO: Use enum/bitflags?
     map_markers: Vec<(i32, MapMarker)>,
     marker_ids: i32,
@@ -61,8 +76,13 @@ pub struct Map {
     // Moved from Game
     water_list: Vec<Rc<RefCell<WaterNode>>>,
     filth_list: Vec<FilthNode>,
-    static_construction_list: HashMap<i32, Construction>,
-    dynamic_construction_list: HashMap<i32, Construction>,
+    static_construction_list: EntityList<Construction>,
+    dynamic_construction_list: EntityList<Construction>,
+    nature_list: EntityList<NatureObject>,
+    item_list: EntityList<Item>,
+    npc_list: EntityList<Npc>,
+    fire_list: Vec<FireNode>,
+    spell_list: Vec<Spell>,
 }
 
 impl Map {
@@ -79,7 +99,7 @@ impl Map {
             }),
             extent: Size::new(HARDCODED_WIDTH as i32, HARDCODED_HEIGHT as i32),
             water_level: -0.8,
-            overlay_flags: 0,
+            overlays: vec![],
             map_markers: vec![],
             marker_ids: 0,
             changed_tiles: HashSet::new(),
@@ -87,8 +107,13 @@ impl Map {
 
             water_list: vec![],
             filth_list: vec![],
-            static_construction_list: HashMap::new(),
-            dynamic_construction_list: HashMap::new(),
+            static_construction_list: EntityList::new(),
+            dynamic_construction_list: EntityList::new(),
+            nature_list: EntityList::new(),
+            item_list: EntityList::new(),
+            npc_list: EntityList::new(),
+            fire_list: vec![],
+            spell_list: vec![],
         }
     }
 
@@ -130,14 +155,14 @@ impl Map {
             if tile.burnt > 0 {
                 tile.burn(-1);
             }
-            if tile.walked_over == 0 && tile.nature_object < 0 && tile.construction < 0 {
+            if tile.walked_over == 0 && tile.nature_object_ref < 0 && tile.construction < 0 {
                 // TODO: Extract into own method?
                 let mut nature_objects = 0;
                 let begin = self.extent.shrink(p - 2);
                 let end = self.extent.shrink(p + 2);
                 for ix in begin.x..=end.x {
                     for iy in begin.y..=end.y {
-                        if self.tile_map[ix as usize][iy as usize].nature_object >= 0 {
+                        if self.tile_map[ix as usize][iy as usize].nature_object_ref >= 0 {
                             nature_objects += 1;
                         }
                     }
@@ -227,59 +252,40 @@ impl Map {
             render_data.camera.y() as i32 - (render_data.viewport.size.height / 2),
         );
 
-        //let (screen_delta_x, screen_delta_y) = up_left.into();
+        let mut viewport = self.render_viewport(&render_data, up_left);
 
-        let minimap = self.render_minimap(&render_data, up_left);
+        if self.overlays.contains(&Overlay::Terrain) {
+            self.static_construction_list.draw(&mut viewport, up_left);
+            self.dynamic_construction_list.draw(&mut viewport, up_left);
 
-        // fn blit<C: Console + SafeConsole, S:Console>(&mut self, source: &S, source_rect: Rectangle, dest_rect: Rectangle,foreground_alpha: f32, background_alpha: f32) {
+            for item in self.item_list.values() {
+                item.draw(&mut viewport, up_left);
+            }
+        }
+
+        for (_, marker) in &self.map_markers {
+            if (Position::from(up_left) + render_data.viewport.size)
+                .contains_position(marker.pos.into())
+            {
+                marker.draw(render_data.console, marker.pos - up_left);
+            }
+        }
+
+        self.npc_list.draw(&mut viewport, up_left);
+        self.fire_list
+            .iter()
+            .for_each(|f| f.draw(&mut viewport, up_left));
+        self.spell_list
+            .iter()
+            .for_each(|s| s.draw(&mut viewport, up_left));
+
         render_data.console.blit::<tcod::console::Root, _>(
-            &minimap,
+            &viewport,
             render_data.viewport,
             render_data.viewport.position,
             1.,
             1.,
         );
-
-        /*
-        (float focusX, float focusY, int viewportX, int viewportY, int viewportW, int viewportH)
-
-            if (!(map->GetOverlayFlags() & TERRAIN_OVERLAY)) {
-                InternalDrawMapItems("static constructions",  Game::Inst()->staticConstructionList, upleft, &minimap);
-                InternalDrawMapItems("dynamic constructions", Game::Inst()->dynamicConstructionList, upleft, &minimap);
-                //TODO: Make this consistent
-                for (std::map<int,boost::shared_ptr<Item> >::iterator itemi = Game::Inst()->itemList.begin(); itemi != Game::Inst()->itemList.end();) {
-                    if (!itemi->second) {
-                        std::map<int,boost::shared_ptr<Item> >::iterator tmp = itemi;
-                        ++itemi;
-                        Game::Inst()->itemList.erase(tmp);
-                        continue;
-                    } else if (!itemi->second->ContainedIn().lock()) {
-                        itemi->second->Draw(upleft, &minimap);
-                    }
-                    ++itemi;
-                }
-            }
-
-            for (Map::MarkerIterator markeri = map->MarkerBegin(); markeri != map->MarkerEnd(); ++markeri) {
-                int markerX = markeri->second.X();
-                int markerY = markeri->second.Y();
-                if (markerX >= upleft.X() && markerX < upleft.X() + viewportW
-                    && markerY >= upleft.Y() && markerY < upleft.Y() + viewportH) {
-                        minimap.putCharEx(markerX - upleft.X(), markerY - upleft.Y(), markeri->second.Graphic(), markeri->second.Color(), TCODColor::black);
-                }
-            }
-
-
-            InternalDrawMapItems("NPCs",                  Game::Inst()->npcList, upleft, &minimap);
-            for (std::list<boost::weak_ptr<FireNode> >::iterator firei = Game::Inst()->fireList.begin(); firei != Game::Inst()->fireList.end(); ++firei) {
-                if (firei->lock()) firei->lock()->Draw(upleft, &minimap);
-            }
-            for (std::list<boost::shared_ptr<Spell> >::iterator spelli = Game::Inst()->spellList.begin(); spelli != Game::Inst()->spellList.end(); ++spelli) {
-                (*spelli)->Draw(upleft, &minimap);
-            }
-
-            TCODConsole::blit(&minimap, 0, 0, viewportW, viewportH, console, viewportX, viewportY);
-        */
     }
 
     #[allow(clippy::nonminimal_bool)]
@@ -424,41 +430,53 @@ impl Map {
         }
     }
 
-    fn render_minimap(&mut self, render_data: &MapRenderData, up_left: Coordinate) -> Offscreen {
-        let mut minimap = Offscreen::new(
+    fn render_viewport(&mut self, render_data: &MapRenderData, up_left: Coordinate) -> Offscreen {
+        let mut mini_map = Offscreen::new(
             render_data.viewport.size.width,
             render_data.viewport.size.height,
         );
         for (y, x) in iproduct!(
-            up_left.y..up_left.y + minimap.height(),
-            up_left.x..up_left.x + minimap.width()
+            up_left.y..up_left.y + mini_map.height(),
+            up_left.x..up_left.x + mini_map.width()
         ) {
             let xy = Coordinate::new(x, y);
+            let mini_map_position = xy - up_left;
             if self.extent.is_inside(xy) {
                 let tile = self.tile_map.by_coordinate(xy);
-                tile.draw(&mut minimap, xy - up_left);
+                tile.draw(&mut mini_map, mini_map_position);
 
-                // TODO: Support overlays (map->GetOverlayFlags() & TERRITORY_OVERLAY)
-                //       Then do: minimap.setCharBackground(x-screenDeltaX,y-screenDeltaY, map->IsTerritory(xy) ? TCODColor(45,85,0) : TCODColor(80,0,0));
-                if let Some(water) = self.water(xy) {
-                    if water.depth() > 0 {
-                        water.draw(&mut minimap, xy - up_left);
+                if !self.overlays.contains(&Overlay::Terrain) {
+                    if let Some(water) = self.water(xy) {
+                        if water.depth() > 0 {
+                            water.draw(&mut mini_map, mini_map_position);
+                        }
+                    }
+                    if let Some(filth) = self.filth(xy) {
+                        if filth.depth() > 0 {
+                            filth.draw(&mut mini_map, mini_map_position);
+                        }
+                    }
+                    let nat_num = self.tile_map.by_coordinate(xy).nature_object_ref;
+                    if nat_num >= 0 {
+                        self.nature_list[&nat_num].draw(&mut mini_map, mini_map_position);
                     }
                 }
-                if let Some(filth) = self.filth(xy) {
-                    if filth.depth() > 0 {
-                        filth.draw(&mut minimap, xy - up_left);
-                    }
+                if self.overlays.contains(&Overlay::Territory) {
+                    mini_map.set_char_background(
+                        mini_map_position.into(),
+                        if self.extent.is_inside(mini_map_position)
+                            && self.tile_map.by_coordinate(mini_map_position).territory
+                        {
+                            Color::new(45, 85, 0)
+                        } else {
+                            Color::new(80, 0, 0)
+                        },
+                        BackgroundFlag::Default,
+                    )
                 }
-            /*
-                int natNum = map->GetNatureObject(xy);
-                if (natNum >= 0) {
-                    Game::Inst()->natureList[natNum]->Draw(upleft,&minimap);
-                }
-            */
             } else {
-                minimap.put_char_ex(
-                    (xy - up_left).into(),
+                mini_map.put_char_ex(
+                    (mini_map_position).into(),
                     Chars::Block3.into(),
                     colors::BLACK,
                     colors::WHITE,
@@ -466,7 +484,7 @@ impl Map {
             }
         }
 
-        minimap
+        mini_map
     }
 }
 
@@ -487,13 +505,17 @@ impl<'m> MapRenderData<'m> {
 }
 
 pub trait MapDrawable {
+    fn draw<P: Into<Position>>(&self, console: &mut dyn SafeConsole, p: P);
+}
+
+pub trait MapGraphicDrawable {
     fn graphic(&self) -> char;
     fn fore_color(&self) -> Color;
     fn back_color(&self) -> Color {
         colors::BLACK
     }
 
-    fn draw<P: Into<Position>>(&self, console: &mut dyn SafeConsole, p: P) {
+    fn draw_graphic<P: Into<Position>>(&self, console: &mut dyn SafeConsole, p: P) {
         console.put_char_ex(
             p.into(),
             self.graphic(),
@@ -501,6 +523,21 @@ pub trait MapDrawable {
             self.back_color(),
         );
     }
+}
+
+impl<T> MapDrawable for T
+where
+    T: MapGraphicDrawable,
+{
+    fn draw<P: Into<Position>>(&self, console: &mut dyn SafeConsole, p: P) {
+        self.draw_graphic(console, p);
+    }
+}
+
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
+pub enum Overlay {
+    Territory,
+    Terrain,
 }
 
 fn update_stage_favor(
@@ -527,8 +564,6 @@ fn update_stage_favor(
     }
 }
 
-struct MapMarker;
-
 pub trait MapExtentHelper {
     fn is_inside(&self, p: Coordinate) -> bool;
     fn shrink(&self, p: Coordinate) -> Coordinate;
@@ -545,11 +580,26 @@ impl MapExtentHelper for Size {
 }
 
 pub trait ConstructionHelper<'a> {
-    fn construction(self, id: i32) -> Option<&'a Construction>;
+    fn construction(self, id: isize) -> Option<&'a Construction>;
 }
 
-impl<'a> ConstructionHelper<'a> for &'a [&HashMap<i32, Construction>] {
-    fn construction(self, id: i32) -> Option<&'a Construction> {
+impl<'a> ConstructionHelper<'a> for &'a [&EntityList<Construction>] {
+    fn construction(self, id: isize) -> Option<&'a Construction> {
         self.iter().filter_map(|m| m.get(&id)).next()
+    }
+}
+
+#[derive(Shrinkwrap)]
+pub struct EntityList<E: MapDrawable>(HashMap<isize, E>);
+
+impl<E: MapDrawable> EntityList<E> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn draw(&self, mini_map: &mut dyn SafeConsole, up_left: Coordinate) {
+        for construction in self.0.values() {
+            construction.draw(mini_map, up_left);
+        }
     }
 }
