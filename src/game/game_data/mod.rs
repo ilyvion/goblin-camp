@@ -387,9 +387,9 @@ impl GameData {
             let line = candidate + Coordinate::from(direction) * distance;
 
             let mut tcod_line = Line::new((line.x, line.y), (candidate.x, candidate.y));
-            while tcod_line.step().is_some() {
-                if self.map.extent.is_inside(line)
-                    && self.map.height_map.get_value(line.x, line.y) < self.map.water_level
+            while let Some(lp) = tcod_line.step() {
+                if self.map.extent.is_inside(lp.into())
+                    && self.map.height_map.get_value(lp.0, lp.1) < self.map.water_level
                     && distance < river_distance
                 {
                     river_distance = distance;
