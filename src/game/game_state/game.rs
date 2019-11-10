@@ -37,7 +37,7 @@ pub struct ConfirmNewGame;
 
 impl ConfirmNewGame {
     pub fn game_state_change(_: &mut GameRef) -> GameStateChange {
-        GameStateChange::Push(Box::new(ConfirmNewGame))
+        GameStateChange::Push(Box::new(Self))
     }
 }
 
@@ -75,8 +75,9 @@ pub struct Game {
 }
 
 impl Game {
+    #[allow(clippy::needless_pass_by_value)]
     pub fn game_state_change(parent_logger: slog::Logger) -> GameStateChange {
-        GameStateChange::Push(Box::new(Game {
+        GameStateChange::Push(Box::new(Self {
             logger: parent_logger.new(o!("GameState" => "Game")),
             first_run: true,
             map_generation_state: None,
@@ -110,7 +111,12 @@ impl GameState for Game {
                 return Ok(None);
             }
             let state = self.map_generation_state.as_mut().unwrap();
-            if !state.is_done() {
+            if state.is_done() {
+                self.first_run = false;
+                self.map_generation_state = None;
+
+                Ok(Some("DoneLoading".to_string()))
+            } else {
                 game_ref.game_data.generate_map(
                     &mut game_ref.data.generator,
                     &game_ref.data.settings,
@@ -118,11 +124,6 @@ impl GameState for Game {
                 );
 
                 Ok(None)
-            } else {
-                self.first_run = false;
-                self.map_generation_state = None;
-
-                Ok(Some("DoneLoading".to_string()))
             }
         /*
             game->SetSeason(EarlySpring);

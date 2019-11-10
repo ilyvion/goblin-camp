@@ -63,7 +63,7 @@ impl<D: Drawable> Drawable for Dialog<D> {
             self.position() + self.size(),
             true,
             BackgroundFlag::Set,
-            self.title.as_ref().map(|s| s.as_str()),
+            self.title.as_ref().map(std::string::String::as_str),
         );
         self.contents.draw(self.position(), console);
     }

@@ -33,6 +33,7 @@ pub trait HoldingOriginals<T> {
     /// It is up to the caller to guarantee that the `Original<D>` came from the implementer of this
     /// trait, and that the implementer is in such a state as to access it through the `Original<D>`
     /// will correctly return a `D`.
+    #[allow(unsafe_code)]
     unsafe fn get_original_component<D: Drawable, O: Original<D, T>>(&mut self, io: &O) -> &mut D
     where
         Self: std::marker::Sized,
@@ -51,6 +52,7 @@ pub trait Original<D: Drawable, T> {
     /// It is up to the caller to guarantee that this `Original<D>` came from the `H`, and that the
     /// `H` is in such a state as to access it through this `Original<D>` will correctly
     /// return a `D`.
+    #[allow(unsafe_code)]
     unsafe fn original<'o, H: HoldingOriginals<T>>(&self, h: &'o mut H) -> &'o mut D {
         let drawable = h.get_component(self.token());
         &mut *(drawable as *mut dyn Drawable as *mut D)
@@ -85,6 +87,7 @@ macro_rules! indexed_original_impl {
     ($ty:ident < $( $N:ident $(: $b0:ident $(+$b:ident)* )? ),* >, $name:ident) => {
         impl< $( $N $(: $b0 $(+$b)* )? ),* > $crate::ui::originals::IndexedOriginal<$ty< $( $N ),* >> {
             pub fn $name<'o, H: $crate::ui::originals::HoldingOriginals<usize>>(&mut self, h: &'o mut H) -> &'o mut $ty< $( $N ),* > {
+                #[allow(unsafe_code)]
                 unsafe { $crate::ui::originals::Original::original(self, h) }
             }
         }

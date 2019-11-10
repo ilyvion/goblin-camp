@@ -92,6 +92,7 @@ impl Drawable for UiContainer {
 
 impl HoldingOriginals<usize> for UiContainer {
     fn get_component(&mut self, token: &usize) -> &mut dyn Drawable {
+        #[allow(unsafe_code)]
         unsafe { self.components.get_unchecked_mut(*token) }.as_mut()
     }
 }

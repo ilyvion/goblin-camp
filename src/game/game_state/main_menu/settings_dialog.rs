@@ -29,7 +29,6 @@ use crate::util::Flip;
 use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;
 use std::path::Path;
-use tcod::console::Root;
 use tcod::input::KeyCode;
 use tcod::{colors, BackgroundFlag, Console, TextAlignment};
 
@@ -51,7 +50,7 @@ pub struct SettingsDialog {
 
 impl SettingsDialog {
     const WIDTH: i32 = 40;
-    const HEIGHT: i32 = 28;
+    const HEIGHT: i32 = 21;
 
     pub fn game_state_change(_: &mut GameRef) -> GameStateChange {
         GameStateChange::Push(Self::game_state())
@@ -62,12 +61,12 @@ impl SettingsDialog {
             fields: [
                 SettingField {
                     label: "Resolution (width)",
-                    value: Default::default(),
+                    value: String::default(),
                     invalid: false,
                 },
                 SettingField {
                     label: "Resolution (height)",
-                    value: Default::default(),
+                    value: String::default(),
                     invalid: false,
                 },
             ],
@@ -82,6 +81,63 @@ impl SettingsDialog {
 
         Ok(())
     }
+
+    fn draw_fields(&self, game_ref: &mut GameRef, current_y: &mut i32, x: i32) {
+        for (i, field) in self.fields.iter().enumerate() {
+            if self.focused_field == i {
+                game_ref.root.set_default_foreground(colors::GREEN);
+            }
+            game_ref.root.print(x + 1, *current_y, field.label);
+
+            if field.invalid {
+                game_ref.root.set_default_background(colors::DARKER_RED);
+            } else {
+                game_ref.root.set_default_background(colors::DARK_GREY);
+            }
+            game_ref.root.set_default_foreground(colors::WHITE);
+            game_ref.root.rect(
+                x + 3,
+                *current_y + 1,
+                Self::WIDTH - 7,
+                1,
+                true,
+                BackgroundFlag::Default,
+            );
+            game_ref.root.print(x + 3, *current_y + 1, &field.value);
+            if self.focused_field == i {
+                game_ref.root.put_char(
+                    x + 3 + field.value.len() as i32,
+                    *current_y + 1,
+                    '_',
+                    BackgroundFlag::Default,
+                );
+            }
+            game_ref.root.set_default_background(colors::BLACK);
+
+            *current_y += 3;
+        }
+    }
+
+    fn draw_bool_settings(game_ref: &mut GameRef, current_y: &mut i32, x: i32) {
+        for &(text, value) in game_ref.data.settings.text_and_values() {
+            game_ref
+                .root
+                .set_default_foreground(if value { colors::GREEN } else { colors::GREY });
+
+            game_ref.root.put_char(
+                x + 1,
+                *current_y,
+                if value {
+                    Chars::CheckboxSet.into()
+                } else {
+                    Chars::CheckboxUnset.into()
+                },
+                BackgroundFlag::Default,
+            );
+            game_ref.root.print(x + 3, *current_y, text);
+            *current_y += 2;
+        }
+    }
 }
 
 impl GameState for SettingsDialog {
@@ -90,14 +146,14 @@ impl GameState for SettingsDialog {
     }
 
     fn activate(&mut self, game_ref: &mut GameRef) -> GameStateResult {
-        if !self.message_box {
+        if self.message_box {
+            self.message_box = false;
+        } else {
             self.original_settings = Some(game_ref.data.settings.clone());
             self.fields[0].value = game_ref.data.settings.display.resolution.width.to_string();
             self.fields[0].invalid = false;
             self.fields[1].value = game_ref.data.settings.display.resolution.height.to_string();
             self.fields[1].invalid = false;
-        } else {
-            self.message_box = false;
         }
 
         Ok(())
@@ -234,112 +290,9 @@ impl GameState for SettingsDialog {
             .print(x + 1, y + 1, "ENTER to save changes, ESC to discard.");
 
         let mut current_y = y + 3;
-        for (i, field) in self.fields.iter().enumerate() {
-            if self.focused_field == i {
-                game_ref.root.set_default_foreground(colors::GREEN);
-            }
-            game_ref.root.print(x + 1, current_y, field.label);
+        self.draw_fields(game_ref, &mut current_y, x);
 
-            if field.invalid {
-                game_ref.root.set_default_background(colors::DARKER_RED);
-            } else {
-                game_ref.root.set_default_background(colors::DARK_GREY);
-            }
-            game_ref.root.set_default_foreground(colors::WHITE);
-            game_ref.root.rect(
-                x + 3,
-                current_y + 1,
-                Self::WIDTH - 7,
-                1,
-                true,
-                BackgroundFlag::Default,
-            );
-            game_ref.root.print(x + 3, current_y + 1, &field.value);
-            game_ref.root.set_default_background(colors::BLACK);
-
-            current_y += 3;
-        }
-
-        let print_bool_setting = |root: &mut Root, value: bool, y: i32, text: &str| {
-            root.set_default_foreground(if value { colors::GREEN } else { colors::GREY });
-
-            root.put_char(
-                x + 1,
-                y,
-                if !value {
-                    Chars::CheckboxUnset.into()
-                } else {
-                    Chars::CheckboxSet.into()
-                },
-                BackgroundFlag::Default,
-            );
-            root.print(x + 3, y, text);
-        };
-
-        print_bool_setting(
-            game_ref.root,
-            game_ref.data.settings.display.fullscreen,
-            current_y,
-            "Fullscreen mode",
-        );
-        current_y += 2;
-        print_bool_setting(
-            game_ref.root,
-            game_ref.data.settings.tutorial,
-            current_y,
-            "Tutorial",
-        );
-        current_y += 2;
-        print_bool_setting(
-            game_ref.root,
-            game_ref.data.settings.translucent_ui,
-            current_y,
-            "Translucent UI",
-        );
-        current_y += 2;
-        print_bool_setting(
-            game_ref.root,
-            game_ref.data.settings.compress_saves,
-            current_y,
-            "Compress saves",
-        );
-        current_y += 2;
-        print_bool_setting(
-            game_ref.root,
-            game_ref.data.settings.auto_save,
-            current_y,
-            "Auto save",
-        );
-        current_y += 2;
-        print_bool_setting(
-            game_ref.root,
-            game_ref.data.settings.pause_on_danger,
-            current_y,
-            "Pause on danger",
-        );
-        current_y += 2;
-
-        game_ref.root.set_default_foreground(colors::WHITE);
-        game_ref.root.print(x + 1, current_y, "Renderer");
-
-        for (i, renderer) in Renderer::all().enumerate() {
-            if renderer == game_ref.data.settings.renderer {
-                game_ref.root.set_default_foreground(colors::GREEN);
-            } else {
-                game_ref.root.set_default_foreground(colors::GREY);
-            }
-            game_ref
-                .root
-                .print(x + 3, current_y + i as i32 + 1, renderer.label());
-        }
-
-        current_y += 5;
-        print_bool_setting(
-            game_ref.root,
-            game_ref.data.settings.use_tile_set,
-            current_y,
-            "Use tile set",
-        );
+        Self::draw_bool_settings(game_ref, &mut current_y, x);
 
         Ok(())
     }

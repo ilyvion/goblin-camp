@@ -18,13 +18,11 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::coordinate::Coordinate;
 use crate::data::base::Position;
 use crate::game::game_data::map::MapDrawable;
 use crate::util::SafeConsole;
-use tcod::Color;
 
-pub enum ConstructionTag {
+pub enum Tag {
     Stockpile,
     FarmPlot,
     Door,
@@ -43,7 +41,9 @@ pub enum ConstructionTag {
 pub struct Construction {}
 
 impl Construction {
-    pub fn has_tag(&self, tag: ConstructionTag) -> bool {
+    // TODO: Remove when implementing
+    #![allow(clippy::needless_pass_by_value)]
+    pub fn has_tag(&self, tag: Tag) -> bool {
         unimplemented!()
     }
 

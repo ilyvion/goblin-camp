@@ -99,7 +99,7 @@ impl MessageBox {
                 contents.add_component(Button::new(
                     first_button_text.clone(),
                     Position::new(22, (i / Self::MAX_TEXT_LINE_LENGTH + 3) as i32),
-                    MessageBox::BUTTON_WIDTH,
+                    Self::BUTTON_WIDTH,
                     first_button_shortcut,
                     true,
                 ));
@@ -108,7 +108,7 @@ impl MessageBox {
                 contents.add_component(Button::new(
                     first_button_text.clone(),
                     Position::new(8, (i / Self::MAX_TEXT_LINE_LENGTH + 3) as i32),
-                    MessageBox::BUTTON_WIDTH,
+                    Self::BUTTON_WIDTH,
                     first_button_shortcut,
                     true,
                 ));
@@ -117,7 +117,7 @@ impl MessageBox {
                 contents.add_component(Button::new(
                     second_button_text.clone(),
                     Position::new(31, (i / Self::MAX_TEXT_LINE_LENGTH + 3) as i32),
-                    MessageBox::BUTTON_WIDTH,
+                    Self::BUTTON_WIDTH,
                     shortcut,
                     true,
                 ));

@@ -379,6 +379,7 @@ impl<'a> dyn SafeConsole + 'a {
     /// Not that it would be any better if it accepted `dyn Console`, because Rust doesn't have any
     /// way of going from `dyn A` to `dyn B` except through the concrete `C` that implements both of
     /// them, so we'd still have to break the abstraction.
+    #[allow(unsafe_code)]
     fn get_console<C: Console + SafeConsole>(&mut self) -> &mut C {
         unsafe { &mut *(self as *mut dyn SafeConsole as *mut C) }
     }

@@ -138,12 +138,13 @@ impl GameData {
         settings: &Settings,
         state: Option<&mut MapGenerationState>,
     ) -> Option<MapGenerationState> {
+        use MapGenerationStage::*;
+
         if state.is_none() {
             return Some(MapGenerationState::new());
         }
         let state = state.unwrap();
 
-        use MapGenerationStage::*;
         match state.stage {
             HeightMapClear => {
                 self.map.height_map.clear();
@@ -273,6 +274,10 @@ impl GameData {
     }
 
     fn generate_smoothing(&mut self, generator: &mut dyn Generator) {
+        const DX: [i32; 3] = [-1, 1, 0];
+        const DY: [i32; 3] = [0; 3];
+        const WEIGHT: [f32; 3] = [0.33; 3];
+
         self.map.height_map.rain_erosion(
             self.map.extent.area() * 5,
             0.005,
@@ -282,9 +287,6 @@ impl GameData {
 
         // This is a simple kernel transformation that does some horizontal smoothing
         // (lifted straight from the libtcod docs)
-        const DX: [i32; 3] = [-1, 1, 0];
-        const DY: [i32; 3] = [0; 3];
-        const WEIGHT: [f32; 3] = [0.33; 3];
         self.map
             .height_map
             .kernel_transform(&DX, &DY, &WEIGHT, 0., 1.);
@@ -345,7 +347,7 @@ impl GameData {
                 let mut low_offset = generator.generate_integer(-5, 5);
                 let mut high_offset = generator.generate_integer(-5, 5);
                 for x_offset in -25..25 {
-                    let range = ((25 * 25 - x_offset * x_offset) as f64).sqrt() as i32;
+                    let range = f64::from(25 * 25 - x_offset * x_offset).sqrt() as i32;
                     low_offset = (generator.generate_integer(-1, 1) + low_offset)
                         .min(-5)
                         .max(5);
@@ -370,7 +372,7 @@ impl GameData {
         let mut river_distance = 70;
 
         // We draw four lines from our potential site and measure the least distance to a river
-        for &direction in Self::RIVER_DIRECTIONS.iter() {
+        for &direction in &Self::RIVER_DIRECTIONS {
             let mut distance = 70;
             let line = candidate + Coordinate::from(direction) * distance;
 
@@ -397,28 +399,29 @@ impl GameData {
         generator: &mut dyn Generator,
     ) {
         //If there is filth here mix it with the water
-        let filth = self.map.filth(pos).map(|f| f.depth());
+        let filth_depth = self.map.filth(pos).map(FilthNode::depth);
 
         if self.map.water_mut(pos).is_none() {
             let mut new_water = WaterNode::new(pos, amount, time, generator);
-            if let Some(filth) = filth {
-                new_water.set_filth(filth);
+            if let Some(filth_depth) = filth_depth {
+                new_water.set_filth(filth_depth);
             }
             self.map.add_water(pos, new_water);
         } else {
-            let mut water = self.map.water_mut(pos).unwrap();
-            if let Some(filth) = filth {
-                water.set_filth(filth);
-            }
-            let new_depth = water.depth() + amount;
-            let coordinate = water.set_depth(new_depth, generator);
-            drop(water);
+            let coordinate = {
+                let mut water = self.map.water_mut(pos).unwrap();
+                if let Some(filth_depth) = filth_depth {
+                    water.set_filth(filth_depth);
+                }
+                let new_depth = water.depth() + amount;
+                water.set_depth(new_depth, generator)
+            };
             if let Some(pos) = coordinate {
                 self.map.add_to_cache(pos);
             }
         }
 
-        if let Some(_) = filth {
+        if filth_depth.is_some() {
             self.map.remove_filth(pos);
         }
     }
@@ -468,9 +471,7 @@ impl MapGenerationStage {
             GenerateBog => RandomizeWind,
             RandomizeWind => CalculateFlow,
             CalculateFlow => UpdateCache,
-            UpdateCache => Done,
-
-            Done => Done,
+            UpdateCache | Done => Done,
         }
     }
 }

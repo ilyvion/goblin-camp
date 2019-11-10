@@ -76,7 +76,9 @@ impl GameState for KeysDialog {
     }
 
     fn activate(&mut self, game_ref: &mut GameRef) -> GameStateResult {
-        if !self.message_box {
+        if self.message_box {
+            self.message_box = false;
+        } else {
             self.original_settings = Some(game_ref.data.settings.clone());
             self.fields = game_ref
                 .data
@@ -86,7 +88,7 @@ impl GameState for KeysDialog {
                 .map(|(label, value)| KeyMapField {
                     label,
                     value,
-                    ..Default::default()
+                    ..KeyMapField::default()
                 })
                 .collect::<Vec<_>>();
 
@@ -100,8 +102,6 @@ impl GameState for KeysDialog {
             let x = game_ref.root.width() / 2 - (w as i32 / 2);
             let y = game_ref.root.height() / 2 - (h as i32 / 2);
             self.position = Position::new(x, y);
-        } else {
-            self.message_box = false;
         }
 
         Ok(())
@@ -141,12 +141,12 @@ impl GameState for KeysDialog {
                     .key_bindings
                     .update_key_map(self.focused_field, key);
 
-                for field in self.fields.iter_mut() {
+                for field in &mut self.fields {
                     field.conflict = false;
                 }
                 let conflicts = self.fields.iter().map(|f| f.value).collect::<Vec<_>>();
                 for conflict in get_non_unique_elements(conflicts) {
-                    for field in self.fields.iter_mut() {
+                    for field in &mut self.fields {
                         if field.value == conflict {
                             field.conflict = true;
                         }

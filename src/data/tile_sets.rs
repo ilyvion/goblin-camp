@@ -47,6 +47,7 @@ pub type Result<T = (), E = Error> = std::result::Result<T, E>;
 pub struct TileSets {}
 
 impl TileSets {
+    #[allow(clippy::needless_pass_by_value)]
     pub fn load_tile_set_metadata(
         paths: &Paths,
         parent_logger: slog::Logger,
@@ -66,7 +67,7 @@ impl TileSets {
 
             Self::load_tile_set_metadata_entry(
                 &method_logger,
-                tile_set_directory,
+                &tile_set_directory,
                 &mut tile_set_metadata,
             );
         }
@@ -83,7 +84,7 @@ impl TileSets {
 
             Self::load_tile_set_metadata_entry(
                 &method_logger,
-                tile_set_directory,
+                &tile_set_directory,
                 &mut tile_set_metadata,
             );
         }
@@ -93,7 +94,7 @@ impl TileSets {
 
     fn load_tile_set_metadata_entry(
         logger: &slog::Logger,
-        tile_set_directory: DirEntry,
+        tile_set_directory: &DirEntry,
         tile_set_metadata: &mut Vec<Box<dyn TilesetMetadata>>,
     ) {
         let tile_set_metadata_entry = TileSetLoader::metadata_by_path(tile_set_directory.path());

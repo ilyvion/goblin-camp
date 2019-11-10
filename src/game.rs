@@ -56,7 +56,7 @@ impl Game {
     pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     pub const NAME: &'static str = "Goblin Camp Revival";
 
-    pub fn new(parent_logger: slog::Logger, config: Config, data: Data) -> Self {
+    pub fn new(parent_logger: &slog::Logger, config: Config, data: Data) -> Self {
         let logger = parent_logger.new(o!());
         let method_logger = logger.new(o!("Method" => "Game::new"));
 
@@ -82,7 +82,7 @@ impl Game {
         let root = Root::initializer()
             .size(size.0 / char_size.0, size.1 / char_size.1)
             .fullscreen(data.settings.display.fullscreen)
-            .title(Game::NAME)
+            .title(Self::NAME)
             .renderer(data.settings.renderer.into())
             .init();
         tcod::input::show_cursor(true);
@@ -130,132 +130,25 @@ impl Game {
                 background_update_messages: vec![],
             };
 
-            if game_state_changed {
-                let current_game_state = self
-                    .game_states
-                    .get_mut(current_game_state_length - 1)
-                    .unwrap();
-                debug!(
-                    method_logger,
-                    "Calling activate on game state {}",
-                    current_game_state.name()
-                );
-                current_game_state
-                    .activate(&mut game_ref)
-                    .context(GameStateError)?;
-                game_state_changed = false;
-            }
-
-            let game_state_change = 'update: loop {
-                for i in 0..current_game_state_length {
-                    if i != current_game_state_length - 1 {
-                        if let Some(message) = self
-                            .game_states
-                            .get_mut(i)
-                            .unwrap()
-                            .background_update(&mut game_ref)
-                            .context(GameStateError)?
-                        {
-                            game_ref.background_update_messages.push(message);
-                        }
-                    } else {
-                        break 'update self
-                            .game_states
-                            .get_mut(i)
-                            .unwrap()
-                            .update(&mut game_ref)
-                            .context(GameStateError)?;
-                    }
-                }
+            let mut game_loop_data = GameLoopData {
+                parent_logger: &self.logger,
+                game_states: &mut self.game_states,
+                current_game_state_length,
+                game_state_changed: &mut game_state_changed,
+                game_ref: &mut game_ref,
             };
 
-            //            // Iterator based alternative. Not much better...
-            //            let game_state_change = self.game_states.iter_mut().enumerate().map(|(i, state)| {
-            //                if i != current_game_state_length - 1 {
-            //                    state.background_update(&mut game_ref).context(GameStateError)?;
-            //                    Ok(None)
-            //                } else {
-            //                    Ok(Some(state.update(&mut game_ref).context(GameStateError)?))
-            //                }
-            //            } ).collect::<Result<Vec<_>, _>>()?.into_iter().filter_map(|o| o).next().unwrap();
-
-            game_ref.root.set_default_background(colors::BLACK);
-            game_ref.root.set_default_foreground(colors::WHITE);
-            game_ref.root.clear();
-            'draw: loop {
-                for i in 0..current_game_state_length {
-                    if i != current_game_state_length - 1 {
-                        self.game_states
-                            .get_mut(i)
-                            .unwrap()
-                            .background_draw(&mut game_ref)
-                            .context(GameStateError)?;
-                    } else {
-                        self.game_states
-                            .get_mut(i)
-                            .unwrap()
-                            .draw(&mut game_ref)
-                            .context(GameStateError)?;
-                        break 'draw;
-                    }
-                }
-            }
-            game_ref.root.flush();
-
-            let deactivate = if let GameStateChange::None = &game_state_change {
-                false
-            } else {
-                true
-            };
-            if deactivate {
-                let current_game_state = self
-                    .game_states
-                    .get_mut(current_game_state_length - 1)
-                    .unwrap();
-                debug!(
-                    method_logger,
-                    "Calling deactivate on game state {}",
-                    current_game_state.name()
-                );
-                current_game_state
-                    .deactivate(&mut game_ref)
-                    .context(GameStateError)?;
-                game_state_changed = true;
-            }
-
-            match game_state_change {
-                GameStateChange::Replace(next_game_state) => {
-                    trace!(method_logger, "Game state change: Replace");
-                    self.game_states.clear();
-                    self.game_states.push(next_game_state);
-                }
-                GameStateChange::Push(next_game_state) => {
-                    trace!(method_logger, "Game state change: Push");
-                    self.game_states.push(next_game_state)
-                }
-                GameStateChange::PopPush(next_game_state) => {
-                    trace!(method_logger, "Game state change: PopPush");
-                    self.game_states.pop();
-                    self.game_states.push(next_game_state)
-                }
-                GameStateChange::Pop => {
-                    trace!(method_logger, "Game state change: Pop");
-                    self.game_states.pop();
-                }
-                GameStateChange::EndGame => {
-                    trace!(method_logger, "Game state change: EndGame");
-                    self.game_states.clear()
-                }
-                GameStateChange::None => {
-                    trace!(method_logger, "Game state change: None");
-                }
-            }
+            Self::activate_game_state(&mut game_loop_data)?;
+            let game_state_change = Self::update_game_states(&mut game_loop_data)?;
+            Self::draw_game_states(&mut game_loop_data)?;
+            Self::deactivate_game_state(&mut game_loop_data, &game_state_change)?;
+            Self::update_game_state(&mut game_loop_data, game_state_change);
         }
 
         Ok(())
     }
 
-    pub fn handle_input(&mut self) -> Input {
+    fn handle_input(&mut self) -> Input {
         let mut raw_events = vec![];
         let mut key_release_event = None;
         let mut key_press_event = None;
@@ -288,6 +181,151 @@ impl Game {
             press_key_event: key_press_event.unwrap_or_default(),
             release_key_event: key_release_event.unwrap_or_default(),
             mouse_event: mouse_event.unwrap_or_else(|| self.previous_mouse.into()),
+        }
+    }
+
+    fn activate_game_state(game_loop_data: &mut GameLoopData) -> Result {
+        if *game_loop_data.game_state_changed {
+            let method_logger = game_loop_data
+                .parent_logger
+                .new(o!("Method" => "Game::activate_game_state"));
+            let current_game_state = game_loop_data
+                .game_states
+                .get_mut(game_loop_data.current_game_state_length - 1)
+                .unwrap();
+            debug!(
+                method_logger,
+                "Calling activate on game state {}",
+                current_game_state.name()
+            );
+            current_game_state
+                .activate(game_loop_data.game_ref)
+                .context(GameStateError)?;
+            *game_loop_data.game_state_changed = false
+        }
+        Ok(())
+    }
+
+    fn update_game_states(game_loop_data: &mut GameLoopData) -> Result<GameStateChange> {
+        let game_state_change = 'update: loop {
+            for i in 0..game_loop_data.current_game_state_length {
+                if i == game_loop_data.current_game_state_length - 1 {
+                    break 'update game_loop_data
+                        .game_states
+                        .get_mut(i)
+                        .unwrap()
+                        .update(game_loop_data.game_ref)
+                        .context(GameStateError)?;
+                }
+
+                if let Some(message) = game_loop_data
+                    .game_states
+                    .get_mut(i)
+                    .unwrap()
+                    .background_update(game_loop_data.game_ref)
+                    .context(GameStateError)?
+                {
+                    game_loop_data
+                        .game_ref
+                        .background_update_messages
+                        .push(message);
+                }
+            }
+        };
+        Ok(game_state_change)
+    }
+
+    fn draw_game_states(game_loop_data: &mut GameLoopData) -> Result {
+        game_loop_data
+            .game_ref
+            .root
+            .set_default_background(colors::BLACK);
+        game_loop_data
+            .game_ref
+            .root
+            .set_default_foreground(colors::WHITE);
+        game_loop_data.game_ref.root.clear();
+        'draw: loop {
+            for i in 0..game_loop_data.current_game_state_length {
+                if i == game_loop_data.current_game_state_length - 1 {
+                    game_loop_data
+                        .game_states
+                        .get_mut(i)
+                        .unwrap()
+                        .draw(game_loop_data.game_ref)
+                        .context(GameStateError)?;
+                    break 'draw;
+                } else {
+                    game_loop_data
+                        .game_states
+                        .get_mut(i)
+                        .unwrap()
+                        .background_draw(game_loop_data.game_ref)
+                        .context(GameStateError)?;
+                }
+            }
+        }
+        game_loop_data.game_ref.root.flush();
+
+        Ok(())
+    }
+
+    fn deactivate_game_state(
+        game_loop_data: &mut GameLoopData,
+        game_state_change: &GameStateChange,
+    ) -> Result {
+        if !game_state_change.is_none() {
+            let method_logger = game_loop_data
+                .parent_logger
+                .new(o!("Method" => "Game::deactivate_game_state"));
+            let current_game_state = game_loop_data
+                .game_states
+                .get_mut(game_loop_data.current_game_state_length - 1)
+                .unwrap();
+            debug!(
+                method_logger,
+                "Calling deactivate on game state {}",
+                current_game_state.name()
+            );
+            current_game_state
+                .deactivate(game_loop_data.game_ref)
+                .context(GameStateError)?;
+            *game_loop_data.game_state_changed = true;
+        }
+
+        Ok(())
+    }
+
+    fn update_game_state(game_loop_data: &mut GameLoopData, game_state_change: GameStateChange) {
+        let method_logger = game_loop_data
+            .parent_logger
+            .new(o!("Method" => "Game::update_game_state"));
+        match game_state_change {
+            GameStateChange::Replace(next_game_state) => {
+                trace!(method_logger, "Game state change: Replace");
+                game_loop_data.game_states.clear();
+                game_loop_data.game_states.push(next_game_state);
+            }
+            GameStateChange::Push(next_game_state) => {
+                trace!(method_logger, "Game state change: Push");
+                game_loop_data.game_states.push(next_game_state)
+            }
+            GameStateChange::PopPush(next_game_state) => {
+                trace!(method_logger, "Game state change: PopPush");
+                game_loop_data.game_states.pop();
+                game_loop_data.game_states.push(next_game_state)
+            }
+            GameStateChange::Pop => {
+                trace!(method_logger, "Game state change: Pop");
+                game_loop_data.game_states.pop();
+            }
+            GameStateChange::EndGame => {
+                trace!(method_logger, "Game state change: EndGame");
+                game_loop_data.game_states.clear()
+            }
+            GameStateChange::None => {
+                // trace!(method_logger, "Game state change: None");
+            }
         }
     }
 }
@@ -334,4 +372,14 @@ pub struct GameRef<'g> {
     pub input: Input,
     pub game_data: &'g mut GameData,
     pub background_update_messages: Vec<String>,
+}
+
+struct GameLoopData<'d, 'g> {
+    parent_logger: &'d slog::Logger,
+    game_states: &'d mut Vec<Box<dyn GameState>>,
+    current_game_state_length: usize,
+    game_state_changed: &'d mut bool,
+    game_ref: &'d mut GameRef<'g>,
+    //game_state_change: &'d GameStateChange,
+    //current_game_state: &'d mut Box<dyn GameState>,
 }

@@ -54,7 +54,7 @@ macro_rules! drawable_prerequisites_impl {
 
         impl< $( $N $(: $b0 $(+$b)* )? ),* > $crate::ui::drawable::VisibilityFn for $ty< $( $N ),* > {
             fn visibility_fn(&self) -> Option<&dyn Fn() -> bool> {
-                self $(.$delegate)?.visibility_fn.as_ref().map(|bf| bf.as_ref())
+                self $(.$delegate)?.visibility_fn.as_ref().map(std::convert::AsRef::as_ref)
             }
         }
     };

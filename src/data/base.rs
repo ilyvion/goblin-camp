@@ -28,7 +28,7 @@ pub struct Position {
 }
 
 impl Position {
-    pub const ORIGIN: Position = Position { x: 0, y: 0 };
+    pub const ORIGIN: Self = Self { x: 0, y: 0 };
 
     pub const fn new(x: i32, y: i32) -> Self {
         Self { x, y }
@@ -48,7 +48,7 @@ impl Display for Position {
 }
 
 impl Add for Position {
-    type Output = Position;
+    type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
         Self {
@@ -59,7 +59,7 @@ impl Add for Position {
 }
 
 impl Sub for Position {
-    type Output = Position;
+    type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
@@ -81,7 +81,7 @@ impl Add<Size> for Position {
 }
 
 impl Add<(i32, i32)> for Position {
-    type Output = Position;
+    type Output = Self;
 
     fn add(self, rhs: (i32, i32)) -> Self::Output {
         Self {
@@ -109,7 +109,7 @@ impl Size {
         Self { width, height }
     }
 
-    pub fn area(&self) -> i32 {
+    pub fn area(self) -> i32 {
         self.width * self.height
     }
 }
@@ -127,7 +127,7 @@ impl Display for Size {
 }
 
 impl Add<(i32, i32)> for Size {
-    type Output = Size;
+    type Output = Self;
 
     fn add(self, rhs: (i32, i32)) -> Self::Output {
         Self {

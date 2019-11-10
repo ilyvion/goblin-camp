@@ -21,7 +21,6 @@
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult, GameStateUpdateResult};
 use crate::game::GameRef;
 use std::borrow::Cow;
-use std::error::Error;
 use tcod::{colors, BackgroundFlag, Console, TextAlignment};
 
 const LOADING: [&str; 4] = [

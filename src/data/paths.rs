@@ -27,14 +27,14 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Snafu)]
 pub enum Error {
     #[snafu(display("Errors settings up {:?} because: {}", path, source))]
-    PathIoError {
+    Io {
         source: std::io::Error,
         path: Option<PathBuf>,
     },
-    PathParentError {
+    Parent {
         child: PathBuf,
     },
-    PathDirsError,
+    Dirs,
 }
 
 pub type Result<T = (), E = Error> = std::result::Result<T, E>;
@@ -70,10 +70,10 @@ pub struct Paths {
 
 impl Paths {
     pub fn new() -> Result<Self> {
-        let executable_file = std::env::current_exe().context(PathIoError { path: None })?;
+        let executable_file = std::env::current_exe().context(Io { path: None })?;
         let executable_directory = executable_file
             .parent()
-            .ok_or(Error::PathParentError {
+            .ok_or(Error::Parent {
                 child: executable_file.clone(),
             })?
             .to_path_buf();
@@ -86,7 +86,7 @@ impl Paths {
         } else if cfg!(linux) {
             executable_directory
                 .parent()
-                .ok_or(Error::PathParentError {
+                .ok_or(Error::Parent {
                     child: executable_directory.clone(),
                 })?
                 .join("share")
@@ -95,7 +95,7 @@ impl Paths {
             unimplemented!("support for Paths on your OS")
         };
 
-        let project_dirs = ProjectDirs::from("", "", Game::NAME).ok_or(Error::PathDirsError)?;
+        let project_dirs = ProjectDirs::from("", "", Game::NAME).ok_or(Error::Dirs)?;
         let data_dir = project_dirs.data_dir();
         let config_dir = project_dirs.config_dir();
 
@@ -104,23 +104,23 @@ impl Paths {
         let mods_directory = data_dir.join("mods");
         let user_tile_sets_directory = data_dir.join("tilesets");
 
-        fs::create_dir_all(data_dir).with_context(|| PathIoError {
+        fs::create_dir_all(data_dir).with_context(|| Io {
             path: Some(data_dir.to_path_buf()),
         })?;
-        fs::create_dir_all(config_dir).with_context(|| PathIoError {
+        fs::create_dir_all(config_dir).with_context(|| Io {
             path: Some(config_dir.to_path_buf()),
         })?;
 
-        fs::create_dir_all(&saves_directory).with_context(|| PathIoError {
+        fs::create_dir_all(&saves_directory).with_context(|| Io {
             path: Some(saves_directory.clone()),
         })?;
-        fs::create_dir_all(&screenshots_directory).with_context(|| PathIoError {
+        fs::create_dir_all(&screenshots_directory).with_context(|| Io {
             path: Some(screenshots_directory.clone()),
         })?;
-        fs::create_dir_all(&mods_directory).with_context(|| PathIoError {
+        fs::create_dir_all(&mods_directory).with_context(|| Io {
             path: Some(mods_directory.clone()),
         })?;
-        fs::create_dir_all(&user_tile_sets_directory).with_context(|| PathIoError {
+        fs::create_dir_all(&user_tile_sets_directory).with_context(|| Io {
             path: Some(user_tile_sets_directory.clone()),
         })?;
 

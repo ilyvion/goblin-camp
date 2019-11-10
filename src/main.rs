@@ -30,7 +30,7 @@ fn run() -> Result<(), InitializationError> {
     let config = {
         let yaml = load_yaml!("cli.yml");
         let matches = App::from_yaml(yaml).get_matches();
-        Config::new(matches).context(ArgumentParsing)?
+        Config::new(&matches).context(ArgumentParsing)?
     };
 
     // Set up logging framework
@@ -45,12 +45,12 @@ fn run() -> Result<(), InitializationError> {
     info!(root_logger, "Starting {} {}", Game::NAME, Game::VERSION);
 
     // Create all "singleton" types
-    let data = Data::new(root_logger.clone()).context(DataInitialization)?;
+    let data = Data::new(&root_logger).context(DataInitialization)?;
 
     // - Show loading screen while doing heavy I/O?
 
     // Show main menu, unless boottest, else shut down
-    let mut game = Game::new(root_logger.clone(), config, data);
+    let mut game = Game::new(&root_logger, config, data);
     game.run().context(GameRun)?;
 
     info!(root_logger, "Ending {} {}", Game::NAME, Game::VERSION);

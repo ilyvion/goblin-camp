@@ -35,21 +35,21 @@ pub enum Direction {
     SouthWest,
     West,
     NorthWest,
-    NoDirection,
+    None,
 }
 
 impl Direction {
-    pub fn reverse(self) -> Direction {
+    pub fn reverse(self) -> Self {
         match self {
-            Direction::North => Direction::South,
-            Direction::NorthEast => Direction::SouthWest,
-            Direction::East => Direction::West,
-            Direction::SouthEast => Direction::NorthWest,
-            Direction::South => Direction::North,
-            Direction::SouthWest => Direction::NorthEast,
-            Direction::West => Direction::East,
-            Direction::NorthWest => Direction::SouthEast,
-            Direction::NoDirection => Direction::NoDirection,
+            Self::North => Self::South,
+            Self::NorthEast => Self::SouthWest,
+            Self::East => Self::West,
+            Self::SouthEast => Self::NorthWest,
+            Self::South => Self::North,
+            Self::SouthWest => Self::NorthEast,
+            Self::West => Self::East,
+            Self::NorthWest => Self::SouthEast,
+            Self::None => Self::None,
         }
     }
 }
@@ -66,14 +66,14 @@ const DIRECTIONS: [Direction; 8] = [
 ];
 
 impl Selection for Direction {
-    fn get_choices() -> &'static [Direction] {
+    fn get_choices() -> &'static [Self] {
         &DIRECTIONS
     }
 }
 
 impl Default for Direction {
     fn default() -> Self {
-        Direction::NoDirection
+        Self::None
     }
 }
 
@@ -111,12 +111,12 @@ impl Coordinate {
         Self { x, y }
     }
 
-    pub fn from_slices(x: &[i32], y: &[i32]) -> Vec<Coordinate> {
+    pub fn from_slices(x: &[i32], y: &[i32]) -> Vec<Self> {
         assert_eq!(x.len(), y.len());
 
         let mut coordinates = vec![];
         for (&x, &y) in x.iter().zip(y) {
-            coordinates.push(Coordinate::new(x, y));
+            coordinates.push(Self::new(x, y));
         }
 
         coordinates
@@ -171,27 +171,27 @@ impl Coordinate {
         self.clamp_to_rectangle(origin, origin + extent - 1)
     }
 
-    pub fn rectilinear_distance_to(self, other: Coordinate) -> i32 {
+    pub fn rectilinear_distance_to(self, other: Self) -> i32 {
         let mut distance = 0;
         Axis::for_both(|a| distance += (other[a] - self[a]).abs());
 
         distance
     }
 
-    pub fn straight_line_distance_to(self, other: Coordinate) -> f32 {
+    pub fn straight_line_distance_to(self, other: Self) -> f32 {
         let mut distance = 0.;
         Axis::for_both(|a| distance += ((other[a] - self[a]) as f32).powi(2));
 
         distance.sqrt()
     }
 
-    pub fn xy_difference(self, other: Coordinate) -> i32 {
+    pub fn xy_difference(self, other: Self) -> i32 {
         // Alex: I have no idea what this calculation from the original game is supposed to be.
         // x distance minus y distance means what? Originally found in `Map::CalculateFlow`
         (self.x - other.x).abs() - (self.y - other.y).abs()
     }
 
-    pub fn direction_to(self, other: Coordinate) -> Direction {
+    pub fn direction_to(self, other: Self) -> Direction {
         use Direction::*;
         use Ordering::*;
         match (other.x.cmp(&self.x), other.y.cmp(&self.y)) {
@@ -203,17 +203,17 @@ impl Coordinate {
             (Less, Greater) => SouthWest,
             (Less, Equal) => West,
             (Less, Less) => NorthWest,
-            (Equal, Equal) => NoDirection,
+            (Equal, Equal) => None,
         }
     }
 
-    pub fn direction_to_rounded(self, other: Coordinate) -> Direction {
+    pub fn direction_to_rounded(self, other: Self) -> Direction {
         use Direction::*;
 
         let x = other.x - self.x;
         let y = other.y - self.y;
         if x == 0 && y == 0 {
-            return NoDirection;
+            return None;
         }
 
         let x = f64::from(x);
@@ -254,7 +254,7 @@ impl From<Coordinate> for (i32, i32) {
 
 impl From<Coordinate> for Position {
     fn from(coordinate: Coordinate) -> Self {
-        Position::new(coordinate.x, coordinate.y)
+        Self::new(coordinate.x, coordinate.y)
     }
 }
 
@@ -275,7 +275,7 @@ impl From<Direction> for Coordinate {
             Direction::SouthWest => Self::new(-1, 1),
             Direction::West => Self::new(-1, 0),
             Direction::NorthWest => Self::new(-1, -1),
-            Direction::NoDirection => Self::new(0, 0),
+            Direction::None => Self::new(0, 0),
         }
     }
 }
@@ -436,6 +436,6 @@ mod tests {
         u.x = 0;
         assert_eq!(o.direction_to(u), Direction::South);
         u.y = 0;
-        assert_eq!(o.direction_to(u), Direction::NoDirection);
+        assert_eq!(o.direction_to(u), Direction::None);
     }
 }

@@ -36,6 +36,16 @@ pub enum GameStateChange {
     EndGame,
 }
 
+impl GameStateChange {
+    pub fn is_none(&self) -> bool {
+        if let Self::None = self {
+            true
+        } else {
+            false
+        }
+    }
+}
+
 /// Represents a state the game can be in, like main menu, game, pause screen, message box,
 /// etc. These can be stacked, and will be told when they are active (i.e. on top) or not,
 /// and they can behave accordingly.

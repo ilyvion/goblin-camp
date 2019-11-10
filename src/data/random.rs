@@ -232,14 +232,14 @@ impl<'a> dyn Generator + 'a {
     ///
     /// [`generate`]: #method.generate
     pub fn generate_u8(&mut self, start: u8, end: u8) -> u8 {
-        self.generate_integer(start as i32, end as i32) as u8
+        self.generate_integer(i32::from(start), i32::from(end)) as u8
     }
 
     /// Generates a `u8` using the [`generate_up_to`] method.
     ///
     /// [`generate_up_to`]: #method.generate_up_to
     pub fn generate_up_to_u8(&mut self, end: u8) -> u8 {
-        self.generate_integer_up_to(end as i32) as u8
+        self.generate_integer_up_to(i32::from(end)) as u8
     }
 }
 
@@ -271,7 +271,7 @@ impl<S: RngCore + SeedableRng> DefaultGenerator<S> {
             //
             tcod_rng: tcod::random::Rng::new_with_seed(
                 Algo::CMWC,
-                (seed % (u64::from(std::u32::MAX) + 1)) as u32,
+                (seed % (u64::from(u32::max_value()) + 1)) as u32,
             ),
         }
     }

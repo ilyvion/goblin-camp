@@ -45,9 +45,8 @@ pub trait OptionExt<T> {
 
 impl<T> OptionExt<T> for Option<T> {
     fn get_or_maybe_insert_with<F: FnOnce() -> Option<T>>(&mut self, f: F) -> Option<&mut T> {
-        match *self {
-            None => *self = f(),
-            _ => (),
+        if self.is_none() {
+            *self = f();
         }
 
         self.as_mut()

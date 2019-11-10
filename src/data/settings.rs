@@ -37,10 +37,10 @@ pub enum Error {
         source: std::io::Error,
         path: PathBuf,
     },
-    TomlDeserializationError {
+    TomlDeserialization {
         source: toml::de::Error,
     },
-    TomlSerializationError {
+    TomlSerialization {
         source: toml::ser::Error,
     },
 }
@@ -62,9 +62,9 @@ impl Renderer {
 
     pub fn label(self) -> &'static str {
         match self {
-            Renderer::GlSl => "GLSL",
-            Renderer::OpenGL => "OpenGL",
-            Renderer::SDL => "SDL",
+            Self::GlSl => "GLSL",
+            Self::OpenGL => "OpenGL",
+            Self::SDL => "SDL",
         }
     }
 
@@ -81,7 +81,7 @@ impl Renderer {
 
 impl Default for Renderer {
     fn default() -> Self {
-        Renderer::SDL
+        Self::SDL
     }
 }
 
@@ -111,6 +111,9 @@ pub struct Settings {
 
     pub display: Display,
     pub key_bindings: KeyBindings,
+
+    #[serde(skip)]
+    text_and_values: [(&'static str, bool); 6],
 }
 
 impl Settings {
@@ -120,15 +123,14 @@ impl Settings {
             fs::read_to_string(settings_file_path).with_context(|| SettingsLoad {
                 path: settings_file_path.to_path_buf(),
             })?;
-        let settings: Settings =
-            toml::from_str(&settings_string).context(TomlDeserializationError)?;
+        let settings: Self = toml::from_str(&settings_string).context(TomlDeserialization)?;
 
         Ok(settings)
     }
 
     pub fn save<P: AsRef<Path>>(&self, settings_file_path: P) -> Result {
         let settings_file_path = settings_file_path.as_ref();
-        let settings_string = toml::to_string_pretty(&self).context(TomlSerializationError)?;
+        let settings_string = toml::to_string_pretty(&self).context(TomlSerialization)?;
         fs::write(settings_file_path, settings_string).with_context(|| SettingsSave {
             path: settings_file_path.to_path_buf(),
         })?;
@@ -136,8 +138,24 @@ impl Settings {
         Ok(())
     }
 
-    pub fn restore_from(&mut self, other: Settings) {
+    pub fn restore_from(&mut self, other: Self) {
         mem::replace(self, other);
+    }
+
+    pub fn text_and_values(&mut self) -> &[(&'static str, bool)] {
+        for (i, (_, v)) in self.text_and_values.iter_mut().enumerate() {
+            *v = match i {
+                0 => self.display.fullscreen,
+                1 => self.tutorial,
+                2 => self.translucent_ui,
+                3 => self.compress_saves,
+                4 => self.auto_save,
+                5 => self.pause_on_danger,
+                _ => unreachable!(),
+            };
+        }
+
+        &self.text_and_values
     }
 }
 
@@ -156,7 +174,14 @@ impl Default for Settings {
             translucent_ui: false,
             auto_save: true,
             pause_on_danger: false,
-
+            text_and_values: [
+                ("Fullscreen mode", false),
+                ("Tutorial", false),
+                ("Translucent UI", false),
+                ("Compress saves", false),
+                ("Auto save", false),
+                ("Pause on danger", false),
+            ],
             key_bindings: KeyBindings::default(),
         }
     }

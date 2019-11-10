@@ -18,9 +18,11 @@
     along with Goblin Camp Revival.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#![allow(clippy::default_trait_access)]
+
 use crate::coordinate::Direction;
 use crate::data::random::Generator;
-use crate::game::game_data::construction::{Construction, ConstructionTag};
+use crate::game::game_data::construction::{Construction, Tag};
 use crate::game::game_data::filth_node::FilthNode;
 use crate::game::game_data::map::MapGraphicDrawable;
 use crate::game::game_data::water_node::WaterNode;
@@ -104,7 +106,7 @@ impl Tile {
                 self.graphic = '_';
                 self.original_fore_color = Color::new(125, 50, 0);
                 self.move_cost = generator.generate_integer(3, 5);
-                self.flow = Direction::NoDirection; // Reset flow
+                self.flow = Direction::None; // Reset flow
             }
             TileType::Bog => {
                 self.graphic = match generator.generate_integer_up_to(9) {
@@ -231,7 +233,7 @@ pub enum TileType {
 
 impl Default for TileType {
     fn default() -> Self {
-        TileType::Grass
+        Self::Grass
     }
 }
 
@@ -257,9 +259,9 @@ impl CacheTile {
         self.move_cost = tile.move_cost;
         if let Some(construction) = construction {
             self.construction = true;
-            self.door = construction.has_tag(ConstructionTag::Door);
-            self.trap = construction.has_tag(ConstructionTag::Trap);
-            self.bridge = construction.has_tag(ConstructionTag::Bridge);
+            self.door = construction.has_tag(Tag::Door);
+            self.trap = construction.has_tag(Tag::Trap);
+            self.bridge = construction.has_tag(Tag::Bridge);
             self.move_speed_modifier = construction.get_move_speed_modifier();
         } else {
             self.construction = false;

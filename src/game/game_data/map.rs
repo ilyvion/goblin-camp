@@ -148,7 +148,7 @@ impl Map {
     // TODO: Rename to something better. Reduces effects like walking, burning and corrupting.
     pub fn naturify(&mut self, p: Coordinate) {
         if self.extent.is_inside(p) {
-            let tile = self.tile_map.by_coordinate_mut(p);
+            let mut tile = self.tile_map.by_coordinate_mut(p);
             if tile.walked_over > 0 {
                 tile.walked_over -= 1;
             }
@@ -167,7 +167,7 @@ impl Map {
                         }
                     }
                 }
-                let tile = self.tile_map.by_coordinate_mut(p);
+                tile = self.tile_map.by_coordinate_mut(p);
 
                 //Corrupted areas have less flora
                 let nature_objects_target = if tile.corruption < 100 { 6 } else { 1 };
@@ -290,22 +290,6 @@ impl Map {
 
     #[allow(clippy::nonminimal_bool)]
     fn set_river_flow(&mut self, px: [i32; 4], py: [i32; 4], generator: &mut dyn Generator) {
-        let mut x_directions = compare_and_pick(&px, Direction::West, Direction::East, || {
-            generator.generate_bool()
-        });
-        let mut y_directions = compare_and_pick(&py, Direction::North, Direction::South, || {
-            generator.generate_bool()
-        });
-        let coordinates = Coordinate::from_slices(&px, &py);
-        let rectilinear_distances = dual_map(&coordinates, |c1, c2| c1.rectilinear_distance_to(c2));
-        let xy_distances = dual_map(&coordinates, |c1, c2| c1.xy_difference(c2));
-
-        // Reverse?
-        if generator.generate_bool() {
-            x_directions.iter_mut().for_each(|x| *x = x.reverse());
-            y_directions.iter_mut().for_each(|y| *y = y.reverse());
-        }
-
         #[derive(Copy, Clone, Eq, PartialEq)]
         struct Unfinished(i32, Coordinate);
         impl Ord for Unfinished {
@@ -318,8 +302,24 @@ impl Map {
                 Some(self.cmp(other))
             }
         }
-        let mut unfinished = BinaryHeap::new();
 
+        let mut x_directions = compare_and_pick(&px, Direction::West, Direction::East, || {
+            generator.generate_bool()
+        });
+        let mut y_directions = compare_and_pick(&py, Direction::North, Direction::South, || {
+            generator.generate_bool()
+        });
+        let coordinates = Coordinate::from_slices(&px, &py);
+        let rectilinear_distances = dual_map(&coordinates, Coordinate::rectilinear_distance_to);
+        let xy_distances = dual_map(&coordinates, Coordinate::xy_difference);
+
+        // Reverse?
+        if generator.generate_bool() {
+            x_directions.iter_mut().for_each(|x| *x = x.reverse());
+            y_directions.iter_mut().for_each(|y| *y = y.reverse());
+        }
+
+        let mut unfinished = BinaryHeap::new();
         unfinished.push(Unfinished(0, coordinates[0]));
 
         let mut favor = [false, false];
@@ -362,7 +362,7 @@ impl Map {
                     {
                         touched.insert(pos);
                         unfinished.push(Unfinished(
-                            std::i32::MAX - pos.rectilinear_distance_to(coordinates[0]),
+                            i32::max_value() - pos.rectilinear_distance_to(coordinates[0]),
                             pos,
                         ));
 
@@ -405,7 +405,7 @@ impl Map {
         for (y, x) in iproduct!(0..self.extent.height, 0..self.extent.width) {
             let pos = Coordinate::new(x, y);
             let tile = self.tile_map.by_coordinate_mut(pos);
-            if tile.flow == Direction::NoDirection {
+            if tile.flow == Direction::None {
                 let mut lowest = Coordinate::new(x, y);
                 for (iy, ix) in iproduct!(y - 1..=y + 1, x - 1..=x + 1) {
                     let candidate = Coordinate::new(ix, iy);
@@ -419,7 +419,7 @@ impl Map {
 
                 tile.flow = pos.direction_to(lowest);
 
-                if tile.flow == Direction::NoDirection && !self.water_list.is_empty() {
+                if tile.flow == Direction::None && !self.water_list.is_empty() {
                     // No slope here, so approximate towards river
                     let random_water = generator.select_by_ref(&self.water_list[..]);
                     let random_water = &*random_water.borrow();
@@ -585,7 +585,7 @@ pub trait ConstructionHelper<'a> {
 
 impl<'a> ConstructionHelper<'a> for &'a [&EntityList<Construction>] {
     fn construction(self, id: isize) -> Option<&'a Construction> {
-        self.iter().filter_map(|m| m.get(&id)).next()
+        self.iter().find_map(|m| m.get(&id))
     }
 }
 

@@ -20,7 +20,6 @@
 
 use crate::coordinate::Coordinate;
 use crate::data::random::Generator;
-use crate::game::game_data::filth_node::FilthNode;
 use crate::game::game_data::map::MapGraphicDrawable;
 use crate::util::tcod::Chars;
 use tcod::Color;

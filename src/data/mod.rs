@@ -49,7 +49,7 @@ pub struct Data {
 }
 
 impl Data {
-    pub fn new(parent_logger: slog::Logger) -> Result<Self> {
+    pub fn new(parent_logger: &slog::Logger) -> Result<Self> {
         let logger = parent_logger.new(o!());
         let method_logger = logger.new(o!("Method" => "Data::new"));
         let generator = DefaultGenerator::default();

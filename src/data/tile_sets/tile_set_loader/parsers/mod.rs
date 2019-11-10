@@ -37,7 +37,7 @@ pub enum Error {
         source: serde_tcod_config_parser::de::Error,
     },
     NoParser,
-    PathParentError {
+    PathParent {
         child: PathBuf,
     },
 }

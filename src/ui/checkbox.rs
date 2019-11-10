@@ -22,7 +22,8 @@ use crate::data::base::{Position, Size};
 use crate::ui::drawable::Drawable;
 use crate::util::SafeConsole;
 use crate::{drawable_prerequisites_impl, indexed_original_impl};
-use tcod::colors;
+use tcod::{colors, BackgroundFlag};
+use crate::util::tcod::Chars;
 
 /// WIP
 pub struct CheckBox {
@@ -37,9 +38,6 @@ pub struct CheckBox {
 }
 
 impl CheckBox {
-    const EMPTY_CHECKBOX: &'static str = "à";
-    const CHECKED_CHECKBOX: &'static str = "á";
-
     pub fn new<S: AsRef<str>>(
         text: S,
         position: Position,
@@ -70,13 +68,14 @@ impl Drawable for CheckBox {
             self.color
         });
 
-        console.print(
+        console.put_char(
             relative_position + self.position,
-            if !self.checked {
-                Self::EMPTY_CHECKBOX
+            if self.checked {
+                Chars::CheckboxSet.into()
             } else {
-                Self::CHECKED_CHECKBOX
+                Chars::CheckboxUnset.into()
             },
+            BackgroundFlag::Default
         );
         console.print(relative_position + self.position + (2, 0), &self.text);
     }

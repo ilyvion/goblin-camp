@@ -45,7 +45,7 @@ impl TileSetParser for TileSetParserV2 {
         metadata.dir = self
             .path
             .parent()
-            .ok_or(Error::PathParentError {
+            .ok_or(Error::PathParent {
                 child: self.path.clone(),
             })?
             .to_path_buf();

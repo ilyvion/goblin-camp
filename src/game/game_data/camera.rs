@@ -81,6 +81,6 @@ impl Camera {
             diff_x += addition;
         }
 
-        self.move_cam(diff_x as f64, diff_y as f64, &game_ref.game_data.map);
+        self.move_cam(f64::from(diff_x), f64::from(diff_y), &game_ref.game_data.map);
     }
 }

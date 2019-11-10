@@ -105,8 +105,7 @@ impl GameState for TileSetsDialog {
         let tile_set = self
             .original_tile_set
             .as_ref()
-            .map(|s| s.as_ref())
-            .unwrap_or("default");
+            .map_or("default", |s| s.as_ref());
         self.selected_tile_set = if let Some((current_selection, _)) = tile_sets_metadata
             .iter()
             .enumerate()

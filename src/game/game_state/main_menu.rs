@@ -20,12 +20,11 @@
 
 pub mod keys_dialog;
 pub mod settings_dialog;
-pub mod tile_sets_dialog;
+//pub mod tile_sets_dialog;
 
 use crate::game::game_state::game::ConfirmNewGame;
 use crate::game::game_state::main_menu::keys_dialog::KeysDialog;
 use crate::game::game_state::main_menu::settings_dialog::SettingsDialog;
-use crate::game::game_state::main_menu::tile_sets_dialog::TileSetsDialog;
 use crate::game::game_state::GameStateUpdateResult;
 use crate::game::game_state::{GameState, GameStateChange, GameStateResult};
 use crate::game::{Game, GameRef};
@@ -44,7 +43,7 @@ pub struct MainMenu {
 }
 
 impl MainMenu {
-    const ENTRIES: [MainMenuEntry; 9] = [
+    const ENTRIES: [MainMenuEntry; 8] = [
         MainMenuEntry {
             label: "New Game",
             shortcut: 'n',
@@ -87,12 +86,12 @@ impl MainMenu {
             active: ActiveState::Never,
             new_state: MainMenu::quit_game_state_change,
         },
-        MainMenuEntry {
-            label: "Tile sets",
-            shortcut: 't',
-            active: ActiveState::Always,
-            new_state: TileSetsDialog::game_state_change,
-        },
+        //        MainMenuEntry {
+        //            label: "Tile sets",
+        //            shortcut: 't',
+        //            active: ActiveState::Always,
+        //            new_state: TileSetsDialog::game_state_change,
+        //        },
         MainMenuEntry {
             label: "Exit",
             shortcut: 'q',
@@ -117,8 +116,8 @@ impl MainMenu {
     fn render(&mut self, game_ref: &mut GameRef, background: bool) -> GameStateResult {
         let render_data = self.render_data.as_mut().unwrap();
 
-        Self::render_menu(game_ref.root, render_data.clone());
-        Self::render_menu_entries(game_ref, render_data.clone());
+        Self::render_menu(game_ref.root, &render_data);
+        Self::render_menu_entries(game_ref, &render_data);
 
         if !background && !render_data.render_credits_done {
             render_data.render_credits_done =
@@ -130,7 +129,7 @@ impl MainMenu {
         Ok(())
     }
 
-    fn render_menu(root: &mut Root, render_data: RenderData) {
+    fn render_menu(root: &mut Root, render_data: &RenderData) {
         root.set_default_foreground(colors::WHITE);
         root.set_default_background(colors::BLACK);
 
@@ -154,7 +153,7 @@ impl MainMenu {
         );
     }
 
-    fn render_menu_entries(game_ref: &mut GameRef, render_data: RenderData) {
+    fn render_menu_entries(game_ref: &mut GameRef, render_data: &RenderData) {
         game_ref.root.set_default_foreground(colors::WHITE);
 
         for (i, entry) in MainMenu::ENTRIES.iter().enumerate() {
@@ -183,7 +182,7 @@ impl MainMenu {
 
     fn handle_input(
         game_ref: &mut GameRef,
-        render_data: RenderData,
+        render_data: &RenderData,
         input_data: &mut InputData,
     ) -> Option<GameStateUpdateResult> {
         let method_logger = render_data
@@ -193,7 +192,7 @@ impl MainMenu {
         if let Some(raw_event) = game_ref.input.raw_events.first().cloned() {
             match raw_event {
                 Event::Key(key) => {
-                    for entry in MainMenu::ENTRIES.iter() {
+                    for entry in &Self::ENTRIES {
                         if key.printable == entry.shortcut && entry.is_active(game_ref) {
                             debug!(method_logger, "Entry chosen by key"; "entry" => entry.label, "key" => key.printable);
                             return Some(Ok((entry.new_state)(game_ref)));
@@ -206,8 +205,8 @@ impl MainMenu {
                     {
                         let selected_line = (mouse.cy - (render_data.edge_y + 2) as isize) as usize;
                         let selected_index = selected_line / 2;
-                        if selected_line % 2 == 0 && selected_index < MainMenu::ENTRIES.len() {
-                            Some(&MainMenu::ENTRIES[selected_index])
+                        if selected_line % 2 == 0 && selected_index < Self::ENTRIES.len() {
+                            Some(&Self::ENTRIES[selected_index])
                         } else {
                             None
                         }
@@ -279,7 +278,7 @@ impl GameState for MainMenu {
                 l_button_down: render_data.l_button_down,
                 selected: render_data.selected,
             };
-            let result = Self::handle_input(game_ref, render_data.clone(), &mut input_data);
+            let result = Self::handle_input(game_ref, &render_data, &mut input_data);
             if let Some(result) = result {
                 return result;
             }
